@@ -12,9 +12,11 @@ func main() {
 	l := log.New(os.Stdout, "rest-api ", log.LstdFlags) // logger
 	// new handler object
 	hh := handlers.NewHello(l)
+	gb := handlers.NewGoodBye(l)
 
 	sm := http.NewServeMux()
 	sm.Handle("/", hh)
+	sm.Handle("/goodbye", gb)
 
 	http.ListenAndServe(":9090", sm)
 }
