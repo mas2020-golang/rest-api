@@ -23,11 +23,11 @@ func main() {
 
 	// http server parameters
 	s := &http.Server{
-		Addr: ":9090",
-		Handler: sm,
-		IdleTimeout: 120 * time.Second,
-		ReadTimeout: 1 * time.Second,
-		WriteTimeout: 1 * time.Second,
+		Addr:         ":9090",           // configure the bind address
+		Handler:      sm,                // set the default handler
+		IdleTimeout:  120 * time.Second, // max time for connections using the TCP Keep Alive
+		ReadTimeout:  1 * time.Second,   // max time to read request from the client
+		WriteTimeout: 1 * time.Second,   // max time to writeß response to the client
 	}
 
 	// start the server in a separate go routine
@@ -36,6 +36,8 @@ func main() {
 		s.ListenAndServe()
 	}()
 
+	time.Sleep(time.Millisecond * 200)
+	l.Println("http server is ready")
 	// wait for a signal to shutdown the server
 	sigChan := make(chan os.Signal)
 	signal.Notify(sigChan, os.Interrupt)
