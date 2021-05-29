@@ -3,7 +3,8 @@ Example project to build a rest API server with Go. The scope of this applicatio
 
 ## Resources
 This is the list of the reference to the resource that we are going to use in the application:
-- Gorilla Mux, official documentation can be found [here](https://www.gorillatoolkit.org/)
+- Gorilla Mux, official documentation can be found [here](https://www.gorillatoolkit.org/).
+  The Gorilla world on github is [here](https://github.com/gorilla).
 
 ## Structure of the application
 The application has this folders:
@@ -12,11 +13,11 @@ The application has this folders:
 ## Curl examples for the 'product' handler 
 - **GET** the product
 ```shell
-curl -v -s  http://localhost:9090/ | jq
+curl -v -s  http://localhost:9090/products | jq
 ```
 - **POST** the new product
 ```shell
-curl -X POST -i  http://localhost:9090/ --data-binary @- << EOF   
+curl -X POST -i  http://localhost:9090/products --data-binary @- << EOF   
 {
     "id": 3,
     "name": "Espresso 2",
@@ -28,10 +29,10 @@ EOF
 ```
 - **PUT** the product
 ```shell
-curl -i -X PUT http://localhost:9090/1 --data-binary @- << EOF   
+curl -i -X PUT http://localhost:9090/products/1 --data-binary @- << EOF   
 {
     "id": 1,
-    "name": "Espresso 100",
+    "name": "Espresso 900",
     "description": "More than a coffee",
     "price": 2.99,
     "sku": "h3218"
