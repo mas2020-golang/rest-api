@@ -29,7 +29,7 @@ var RecordNotFound = fmt.Errorf("product not found")
 // ProductsType type to return directly a slice of Product
 type ProductsType []*Product
 
-// ToJSON encode the ProductsType object and send it to the writer
+// ToJSON encode the ProductsType object and write it into the writer
 // passed as argument
 func (p *ProductsType) ToJSON(w io.Writer) error {
 	e := json.NewEncoder(w)

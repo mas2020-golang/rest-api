@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/gorilla/mux"
 	"github.com/mas2020-golang/rest-api/handlers"
 	"log"
 	"net/http"
@@ -14,12 +15,21 @@ func main() {
 	// preliminary stuff
 	l := log.New(os.Stdout, "", log.LstdFlags) // logger
 	// new handler object
-	products := handlers.NewProducts(l)
-	gb := handlers.NewGoodBye(l)
+	ph := handlers.NewProducts(l)
+	//gb := handlers.NewGoodBye(l)
 
-	sm := http.NewServeMux()
-	sm.Handle("/", products)
-	sm.Handle("/goodbye", gb)
+	// create new serve mux and create the handlers
+	sm := mux.NewRouter()
+	getRouter := sm.Methods("GET").Subrouter()
+	getRouter.HandleFunc("/products", ph.GetProducts)
+
+	putRouter := sm.Methods(http.MethodPut).Subrouter()
+	putRouter.HandleFunc("/products/{id:[0-9]+}", ph.UpdateProduct)
+	putRouter.Use(ph.MiddlewareProductValidation)
+
+	postRouter := sm.Methods(http.MethodPost).Subrouter()
+	postRouter.HandleFunc("/products", ph.AddProduct)
+	postRouter.Use(ph.MiddlewareProductValidation)
 
 	// http server parameters
 	s := &http.Server{
