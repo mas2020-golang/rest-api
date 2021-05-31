@@ -26,6 +26,31 @@ type Product struct {
 // custom errors
 var RecordNotFound = fmt.Errorf("product not found")
 
+// FromJSON fills Product decoding the JSON read from the reader.
+// Returns an error in case of any.
+func (p *Product) FromJSON(r io.Reader) error {
+	e := json.NewDecoder(r)
+	return e.Decode(p)
+}
+
+// Add a new product to the internal slice of ProductsType
+func (p *Product) Add() {
+	productList = append(productList, p)
+}
+
+// Update the product in the collection
+func (p *Product) Update() error {
+	// search the product in the internal collection (in a real application it would update the database with the value
+	// of p searching the row with the corresponding product.ID)
+	idx := findProduct(p.ID)
+	if idx > -1 {
+		productList[idx] = p
+		return nil
+	} else {
+		return RecordNotFound
+	}
+}
+
 // ProductsType type to return directly a slice of Product
 type ProductsType []*Product
 
@@ -36,40 +61,12 @@ func (p *ProductsType) ToJSON(w io.Writer) error {
 	return e.Encode(p)
 }
 
-// FromJSON returns a new Product decoding the JSON read from the reader
-func (p *ProductsType) FromJSON(r io.Reader) (*Product, error) {
-	prod := &Product{}
-	e := json.NewDecoder(r)
-	err := e.Decode(prod)
-	if err != nil {
-		return nil, err
-	} else {
-		return prod, nil
-	}
-}
-
-// Add a new product to the internal slice of ProductsType
-func (p *ProductsType) Add(new *Product) {
-	productList = append(productList, new)
-}
-
-// Update the product in the collection
-func (p *ProductsType) Update(id int, prod *Product) error {
-	idx := p.findProduct(id)
-	if idx > -1 {
-		productList[idx] = prod
-		return nil
-	} else {
-		return RecordNotFound
-	}
-}
-
 func (p *ProductsType) GetProducts() ProductsType {
 	return productList
 }
 
 // findProduct returns the position of the product in the list or -1 in case of not found
-func (p *ProductsType) findProduct(id int) int {
+func findProduct(id int) int {
 	idx := -1
 	for i, prodItem := range productList {
 		if prodItem.ID == id {
@@ -97,7 +94,13 @@ var productList = ProductsType{
 		Name:        "Espresso",
 		Description: "Short and strong coffee",
 		Price:       1.99,
-		SKU:         "dfadds",
+		SKU:
+
+
+
+
+
+			"dfadds",
 		CreatedOn:   time.Now().UTC().String(),
 		UpdatedOn:   time.Now().UTC().String(),
 	},

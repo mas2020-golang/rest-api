@@ -39,7 +39,7 @@ func (p *Products) AddProduct(w http.ResponseWriter, r *http.Request) {
 	// call
 	prod, _ := r.Context().Value("prod").(*data.Product) // cast the interface{} to *data.Product
 	p.l.Printf("add product %#v", prod)
-	data.Products.Add(prod)
+	prod.Add()
 }
 
 // UpdateProduct is the handler for the update of a single product
@@ -56,7 +56,7 @@ func (p *Products) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	// call
 	prod, _ := r.Context().Value("prod").(*data.Product) // cast the interface{} to *data.Product
 	p.l.Printf("update product %#v", prod)
-	err = data.Products.Update(id, prod)
+	err = prod.Update()
 	// error check
 	switch err {
 	case data.RecordNotFound:
@@ -73,8 +73,8 @@ func (p *Products) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 func (p *Products) MiddlewareProductValidation(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		p.l.Println("MiddlewareProductValidation func execution")
-		prod, err := new(data.ProductsType).FromJSON(r.Body)
-		if err != nil {
+		prod := &data.Product{}
+		if err := prod.FromJSON(r.Body); err != nil{
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
