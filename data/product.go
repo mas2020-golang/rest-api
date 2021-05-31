@@ -7,17 +7,19 @@ package data
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/go-playground/validator"
 	"io"
+	"regexp"
 	"time"
 )
 
 // Product defines the structure for an API product
 type Product struct {
 	ID          int     `json:"id"`
-	Name        string  `json:"name"`
+	Name        string  `json:"name" validate:"required"`
 	Description string  `json:"description"`
-	Price       float32 `json:"price"`
-	SKU         string  `json:"sku"`
+	Price       float32 `json:"price" validate:"gt=0"`
+	SKU         string  `json:"sku" validate:"required,sku"`
 	CreatedOn   string  `json:"-"`
 	UpdatedOn   string  `json:"-"`
 	DeletedOn   string  `json:"-"`
@@ -25,6 +27,22 @@ type Product struct {
 
 // custom errors
 var RecordNotFound = fmt.Errorf("product not found")
+
+// Validate the structure
+func (p *Product) Validate() error {
+	validate := validator.New()
+	// this methods is used to validate in a custom way the field SKU
+	validate.RegisterValidation("sku", validateSKU)
+	return validate.Struct(p)
+}
+
+// validateSKU is a custom validation func for the SKU field
+func validateSKU(fl validator.FieldLevel) bool {
+	// sku is of sada-ads-adas
+	re := regexp.MustCompile(`[a-z]+-[a-z]+-[a-z]+`)
+	result := re.FindAllString(fl.Field().String(), -1)
+	return len(result) == 1
+}
 
 // FromJSON fills Product decoding the JSON read from the reader.
 // Returns an error in case of any.
@@ -97,11 +115,8 @@ var productList = ProductsType{
 		SKU:
 
 
-
-
-
-			"dfadds",
-		CreatedOn:   time.Now().UTC().String(),
-		UpdatedOn:   time.Now().UTC().String(),
+		"dfadds",
+		CreatedOn: time.Now().UTC().String(),
+		UpdatedOn: time.Now().UTC().String(),
 	},
 }
