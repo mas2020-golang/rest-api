@@ -78,6 +78,11 @@ func (p *Products) MiddlewareProductValidation(next http.Handler) http.Handler {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+		p.l.Println("product middleware validation")
+		if err := prod.Validate(); err != nil{
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 
 		// context creation to store product
 		ctx := context.WithValue(r.Context(), "prod", prod)
