@@ -79,6 +79,7 @@ func (p *ProductsType) ToJSON(w io.Writer) error {
 	return e.Encode(p)
 }
 
+// TODO: attach this method to the database (the method reads from the products table and returns a json collection of products)
 func (p *ProductsType) GetProducts() ProductsType {
 	return productList
 }
@@ -112,11 +113,8 @@ var productList = ProductsType{
 		Name:        "Espresso",
 		Description: "Short and strong coffee",
 		Price:       1.99,
-		SKU:
-
-
-		"dfadds",
-		CreatedOn: time.Now().UTC().String(),
-		UpdatedOn: time.Now().UTC().String(),
+		SKU:         "dfadds",
+		CreatedOn:   time.Now().UTC().String(),
+		UpdatedOn:   time.Now().UTC().String(),
 	},
 }
