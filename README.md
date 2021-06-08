@@ -87,7 +87,6 @@ curl -v -s  http://localhost:9090/products | jq
 ```shell
 curl -X POST -i  http://localhost:9090/products --data-binary @- << EOF   
 {
-    "id": 3,
     "name": "Espresso 2",
     "description": "Short and strong coffee",
     "price": 2.50,
@@ -101,7 +100,6 @@ EOF
 ```shell
 curl -i -X PUT http://localhost:9090/products/1 --data-binary @- << EOF   
 {
-    "id": 1,
     "name": "Espresso 900",
     "description": "More than a coffee",
     "price": 2.99,
