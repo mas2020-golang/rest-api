@@ -58,13 +58,6 @@ func (a *App) Run(addr string) {
 
 	// db connection: close the pool
 	defer a.DBPool.Close()
-	//a.DBPool, err = pgxpool.ConnectConfig(context.Background(), config)
-	//if err != nil {
-	//	l.Fatal("unable to connect to database: ", err)
-	//} else {
-	//	l.Println("connection to the database OK!")
-	//}
-	//defer a.DBPool.Close()
 
 	// start the server in a separate go routine
 	go func() {
@@ -92,7 +85,7 @@ func (a *App) Run(addr string) {
 func (a *App) initRoutes() {
 
 	// new handler object
-	ph := handlers.NewProducts(l)
+	ph := handlers.NewProducts(l, a.DBPool)
 	//gb := handlers.NewGoodBye(l)
 
 	// create the handlers
