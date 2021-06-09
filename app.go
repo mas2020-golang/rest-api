@@ -56,8 +56,7 @@ func (a *App) Run(addr string) {
 		WriteTimeout: 1 * time.Second,   // max time to write response to the client
 	}
 
-	// db connection: close the pool
-	defer a.DBPool.Close()
+
 
 	// start the server in a separate go routine
 	go func() {
@@ -76,9 +75,35 @@ func (a *App) Run(addr string) {
 	sig := <-sigChan
 	l.Printf("received the %v signal", sig)
 
-	// gracefully shutdown the server
-	tc, _ := context.WithTimeout(context.Background(), 30*time.Second)
-	s.Shutdown(tc)
+	// gracefully shutdown the server (after 10 seconds server is shutdown)
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	//s.Shutdown(tc)
+	a.shutdown(ctx, s)
+	l.Println("shutting down, bye")
+	os.Exit(0)
+}
+
+// Gracefully shutdown function
+func (a *App) shutdown(ctx context.Context, s *http.Server) {
+	c := make(chan string)
+	go func() {
+		l.Println("some long running stuff...")
+		// db connection: close the pool
+		l.Printf("closing db connections...")
+		a.DBPool.Close()
+		l.Println("closing db connections done!")
+		time.Sleep(time.Millisecond * 200)
+		c <- "cleanup operations done!"
+	}()
+
+	select {
+	case done := <-c:
+		l.Println("normal shutdown:", done)
+		s.Shutdown(ctx)
+	case <-ctx.Done():
+		l.Println("elapsed timeout:", ctx.Err())
+		s.Shutdown(ctx)
+	}
 }
 
 // InitRoutes inits the routes for the application
