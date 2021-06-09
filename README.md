@@ -20,12 +20,12 @@ this [article](https://docs.microsoft.com/en-us/azure/architecture/best-practice
 
 This paragraph contains a list of features we need, and we have not implemented yet in the project.
 
-- add **PostgreSQL database** to the project and change the model to read and write using a database connection
-- add **authentication** to the project with a POST /login method
-- add **JWT authorization** as a middleware layer
-- add **goutils** to the project to better format the output
-- add a **YAML configuration file** to the project
-- add the **test section** where to test every method before implementing it
+- **[✔︎]** add **PostgreSQL database** to the project and change the model to read and write using a database connection
+- **[TODO]** add **authentication** to the project with a POST /login method (take a deeper look at Gorilla Mux doc)
+- **[TODO]** add **JWT authorization** as a middleware layer
+- **[TODO]** add **goutils** to the project to better format the output
+- **[TODO]** add a **YAML configuration file** to the project
+- **[✔︎]** add the **test section** where to test every method before implementing it
 
 ## Dependencies
 
@@ -47,15 +47,13 @@ The application has these folders:
 To start the application, first set the correct environment variable:
 
 ```shell
-To connect for testing using Docker execute:
-```shell
 export APP_DB_HOST=localhost \
 export APP_DB_USERNAME=postgres \
 export APP_DB_PASSWORD=password \
 export APP_DB_NAME=postgres
 ```
 
-the start a docker container as:
+then start a docker container as:
 
 ```shell
 docker run  -d -p 5432:5432 -e POSTGRES_PASSWORD=password --name postgres_test postgres
