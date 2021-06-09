@@ -91,6 +91,7 @@ func (a *App) initRoutes() {
 	// create the handlers
 	getRouter := a.Router.Methods("GET").Subrouter()
 	getRouter.HandleFunc("/products", ph.GetProducts)
+	getRouter.HandleFunc("/products/{id:[0-9]+}", ph.GetProduct)
 
 	putRouter := a.Router.Methods(http.MethodPut).Subrouter()
 	putRouter.HandleFunc("/products/{id:[0-9]+}", ph.UpdateProduct)

@@ -58,6 +58,13 @@ func (p *Product) ToJSON() ([]byte, error) {
 	return json.Marshal(p)
 }
 
+// Get the product reading db
+func (p *Product) Get(pool *pgxpool.Pool) error {
+	row := pool.QueryRow(context.Background(), "SELECT id, name, price FROM products WHERE id=$1",
+		p.ID)
+	return row.Scan(&p.ID, &p.Name, &p.Price)
+}
+
 // Add a new product to the internal slice of ProductsType
 func (p *Product) Add(pool *pgxpool.Pool) error {
 	err := pool.QueryRow(context.Background(),
@@ -72,17 +79,16 @@ func (p *Product) Add(pool *pgxpool.Pool) error {
 }
 
 // Update the product in the collection
-// TODO: write to the database and code the corresponding test method
-func (p *Product) Update() error {
-	// search the product in the internal collection (in a real application it would update the database with the value
-	// of p searching the row with the corresponding product.ID)
-	idx := findProduct(p.ID)
-	if idx > -1 {
-		productList[idx] = p
-		return nil
-	} else {
+func (p *Product) Update(pool *pgxpool.Pool) error {
+	tag, err := pool.Exec(context.Background(), "UPDATE products SET name = $1, price = $2 WHERE id = $3",
+		p.Name, p.Price, p.ID)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() != 1 {
 		return RecordNotFound
 	}
+	return nil
 }
 
 // ProductsType type to return directly a slice of Product

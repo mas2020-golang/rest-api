@@ -76,10 +76,16 @@ go test -v
 
 ## Curl examples for the 'product' handler
 
-- **GET** the product
+- **GET** all the products
 
 ```shell
 curl -v -s  http://localhost:9090/products | jq
+```
+
+- **GET** the single product
+
+```shell
+curl -v -s  http://localhost:9090/products/1 | jq
 ```
 
 - **POST** the new product

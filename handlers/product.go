@@ -38,6 +38,29 @@ func (p *Products) GetProducts(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (p *Products) GetProduct(w http.ResponseWriter, r *http.Request) {
+	p.l.Println("handle GET Product")
+	// retrieve the id from the path
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		http.Error(w, "{id} not found in the path", http.StatusBadRequest)
+		return
+	}
+	prod := &data.Product{ID: id}
+	err = prod.Get(p.pool)
+	if err != nil {
+		http.Error(w, "product not found: "+err.Error(), http.StatusNotFound)
+		return
+	}
+	json, err := prod.ToJSON()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Write(json)
+}
+
 func (p *Products) AddProduct(w http.ResponseWriter, r *http.Request) {
 	p.l.Println("handle POST Product")
 	// take the product from the request context. The product has been inserted into the context from the middleware function
@@ -73,16 +96,17 @@ func (p *Products) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	// take the product from the request context. The product has been inserted into the context from the middleware function
 	// call
 	prod, _ := r.Context().Value("prod").(*data.Product) // cast the interface{} to *data.Product
-	p.l.Printf("update product %#v", prod)
-	err = prod.Update()
+	p.l.Printf("product data received are %#v", prod)
+	prod.ID = id
+	err = prod.Update(p.pool)
 	// error check
 	switch err {
 	case data.RecordNotFound:
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusNoContent)
-	w.Write([]byte(`"message": "update product done!"`))
 }
 
 // MiddlewareProductValidation is a function call before the effective function. Its scope is to unmarshall the json

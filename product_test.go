@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/mas2020-golang/rest-api/data"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -96,5 +97,50 @@ func TestCreateProduct(t *testing.T) {
 	// floats, when the target is a map[string]interface{}
 	if m["id"] != 1.0 {
 		t.Errorf("Expected product ID to be '1'. Got '%v'", m["id"])
+	}
+}
+
+func TestUpdateProduct(t *testing.T) {
+
+	clearTable()
+	// add new Product to test the update
+	p := data.Product{
+		ID:          0,
+		Name:        "test",
+		Description: "test",
+		Price:       100,
+		SKU:         "dsda-asd-asd",
+	}
+	err := p.Add(a.DBPool)
+	if err != nil {
+		t.Error("error occurred during the product creation")
+	}
+	req, _ := http.NewRequest("GET", "/products/1", nil)
+	response := executeRequest(req)
+	checkResponseCode(t, http.StatusOK, response.Code)
+	var originalProduct map[string]interface{}
+	json.Unmarshal(response.Body.Bytes(), &originalProduct)
+
+	var jsonStr = []byte(`{"name":"test product - updated name", "price": 11.22,"sku": "dfr-fadf-adfa"}`)
+	req, _ = http.NewRequest("PUT", "/products/1", bytes.NewBuffer(jsonStr))
+	req.Header.Set("Content-Type", "application/json")
+
+	response = executeRequest(req)
+
+	checkResponseCode(t, http.StatusCreated, response.Code)
+
+	var m map[string]interface{}
+	json.Unmarshal(response.Body.Bytes(), &m)
+
+	if m["id"] != originalProduct["id"] {
+		t.Errorf("Expected the id to remain the same (%v). Got %v", originalProduct["id"], m["id"])
+	}
+
+	if m["name"] == originalProduct["name"] {
+		t.Errorf("Expected the name to change from '%v' to '%v'. Got '%v'", originalProduct["name"], m["name"], m["name"])
+	}
+
+	if m["price"] == originalProduct["price"] {
+		t.Errorf("Expected the price to change from '%v' to '%v'. Got '%v'", originalProduct["price"], m["price"], m["price"])
 	}
 }
