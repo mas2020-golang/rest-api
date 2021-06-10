@@ -67,9 +67,9 @@ func TestEmptyTable(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/products", nil)
 	response := executeRequest(req)
 
-	checkResponseCode(t, http.StatusOK, response.Code)
-	if body := response.Body.String(); body != "[]\n" {
-		t.Errorf("Expected an empty array. Got %s", body)
+	checkResponseCode(t, http.StatusUnauthorized, response.Code)
+	if body := response.Body.String(); body == "" {
+		t.Errorf("Expected an error response %s", body)
 	}
 }
 

@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/mas2020-golang/rest-api/handlers"
+	"github.com/mas2020-golang/rest-api/utils"
 	"log"
 	"net/http"
 	"os"
@@ -41,6 +42,8 @@ func (a *App) Initialize(user, password, host, dbname string) {
 	}
 
 	a.Router = mux.NewRouter()
+	// create a pwd for the JWT signing algorithm
+	utils.Server.GeneratePwd()
 	// init the routes
 	a.initRoutes()
 }
@@ -55,8 +58,6 @@ func (a *App) Run(addr string) {
 		ReadTimeout:  1 * time.Second,   // max time to read request from the client
 		WriteTimeout: 1 * time.Second,   // max time to write response to the client
 	}
-
-
 
 	// start the server in a separate go routine
 	go func() {
@@ -106,23 +107,25 @@ func (a *App) shutdown(ctx context.Context, s *http.Server) {
 	}
 }
 
-// InitRoutes inits the routes for the application
+// initRoutes inits the routes for the application
 func (a *App) initRoutes() {
-
 	// new handler object
 	ph := handlers.NewProducts(l, a.DBPool)
 	//gb := handlers.NewGoodBye(l)
+	//a.Router.Use(handlers.AuthMiddleware)
 
-	// create the handlers
-	getRouter := a.Router.Methods("GET").Subrouter()
-	getRouter.HandleFunc("/products", ph.GetProducts)
-	getRouter.HandleFunc("/products/{id:[0-9]+}", ph.GetProduct)
+	// products sub router (for every call is checked the Token, for POST and PUT is also used the validation middleware
+	prodRouter := a.Router.PathPrefix("/products").Subrouter()
+	prodRouter.HandleFunc("", ph.GetProducts).Methods(http.MethodGet)
+	prodRouter.HandleFunc("/{id:[0-9]+}", ph.GetProduct).Methods(http.MethodGet)
+	prodRouter.Use(handlers.AuthMiddleware)
 
-	putRouter := a.Router.Methods(http.MethodPut).Subrouter()
-	putRouter.HandleFunc("/products/{id:[0-9]+}", ph.UpdateProduct)
-	putRouter.Use(ph.MiddlewareProductValidation)
+	putPostRouter := prodRouter.Methods(http.MethodPost, http.MethodPut).Subrouter()
+	putPostRouter.HandleFunc("/{id:[0-9]+}", ph.UpdateProduct).Methods(http.MethodPut)
+	putPostRouter.HandleFunc("", ph.AddProduct).Methods(http.MethodPost)
+	putPostRouter.Use(ph.MiddlewareProductValidation)
 
-	postRouter := a.Router.Methods(http.MethodPost).Subrouter()
-	postRouter.HandleFunc("/products", ph.AddProduct)
-	postRouter.Use(ph.MiddlewareProductValidation)
+	// login handler
+	a.Router.HandleFunc("/login", handlers.Login).Methods(http.MethodPost)
+
 }

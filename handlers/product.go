@@ -6,6 +6,8 @@ package handlers
 
 import (
 	"context"
+	"fmt"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/mas2020-golang/rest-api/data"
@@ -23,10 +25,12 @@ func NewProducts(l *log.Logger, pool *pgxpool.Pool) *Products {
 	return &Products{l, pool}
 }
 
-// test it with:
-// curl -s  http://localhost:9090/ | jq
 func (p *Products) GetProducts(w http.ResponseWriter, r *http.Request) {
 	p.l.Println("handle GET Products")
+	// get the claims
+	claims, _ := r.Context().Value("claims").(jwt.MapClaims) // cast the interface{} to jwt.MapClaims
+	p.l.Printf("claims data in the context are %#v", claims)
+
 	lp, err := data.Products.GetProducts(p.pool)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -44,18 +48,18 @@ func (p *Products) GetProduct(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, "{id} not found in the path", http.StatusBadRequest)
+		http.Error(w, `{"message": "{id} not found in the path"}`, http.StatusBadRequest)
 		return
 	}
 	prod := &data.Product{ID: id}
 	err = prod.Get(p.pool)
 	if err != nil {
-		http.Error(w, "product not found: "+err.Error(), http.StatusNotFound)
+		http.Error(w, `{"message": "product not found"}`, http.StatusNotFound)
 		return
 	}
 	json, err := prod.ToJSON()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf(`{"message": "%s"}`, err.Error()), http.StatusInternalServerError)
 		return
 	}
 	w.Write(json)
