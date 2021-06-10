@@ -5,9 +5,11 @@ To avoid reading from a database the data are also inserted here.
 package data
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/go-playground/validator"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"io"
 	"regexp"
 	"time"
@@ -51,22 +53,42 @@ func (p *Product) FromJSON(r io.Reader) error {
 	return e.Decode(p)
 }
 
+// ToJSON encode the Product object into a json representation in []byte
+func (p *Product) ToJSON() ([]byte, error) {
+	return json.Marshal(p)
+}
+
+// Get the product reading db
+func (p *Product) Get(pool *pgxpool.Pool) error {
+	row := pool.QueryRow(context.Background(), "SELECT id, name, price FROM products WHERE id=$1",
+		p.ID)
+	return row.Scan(&p.ID, &p.Name, &p.Price)
+}
+
 // Add a new product to the internal slice of ProductsType
-func (p *Product) Add() {
-	productList = append(productList, p)
+func (p *Product) Add(pool *pgxpool.Pool) error {
+	err := pool.QueryRow(context.Background(),
+		"INSERT INTO products(name, price) VALUES($1, $2) RETURNING id",
+		p.Name, p.Price).Scan(&p.ID)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Update the product in the collection
-func (p *Product) Update() error {
-	// search the product in the internal collection (in a real application it would update the database with the value
-	// of p searching the row with the corresponding product.ID)
-	idx := findProduct(p.ID)
-	if idx > -1 {
-		productList[idx] = p
-		return nil
-	} else {
+func (p *Product) Update(pool *pgxpool.Pool) error {
+	tag, err := pool.Exec(context.Background(), "UPDATE products SET name = $1, price = $2 WHERE id = $3",
+		p.Name, p.Price, p.ID)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() != 1 {
 		return RecordNotFound
 	}
+	return nil
 }
 
 // ProductsType type to return directly a slice of Product
@@ -79,8 +101,30 @@ func (p *ProductsType) ToJSON(w io.Writer) error {
 	return e.Encode(p)
 }
 
-func (p *ProductsType) GetProducts() ProductsType {
-	return productList
+func (p *ProductsType) GetProducts(pool *pgxpool.Pool) (ProductsType, error) {
+	var productList = ProductsType{}
+	rows, err := pool.Query(context.Background(), "SELECT * FROM products")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	// iterate through the result set
+	for rows.Next() {
+		p := Product{}
+		err = rows.Scan(&p.ID, &p.Name, &p.Price)
+		if err != nil {
+			return nil, err
+		}
+		productList = append(productList, &p)
+	}
+
+	// Any errors encountered by rows.Next or rows.Scan will be returned here
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+	// return the list of products
+	return productList, nil
 }
 
 // findProduct returns the position of the product in the list or -1 in case of not found
@@ -112,11 +156,8 @@ var productList = ProductsType{
 		Name:        "Espresso",
 		Description: "Short and strong coffee",
 		Price:       1.99,
-		SKU:
-
-
-		"dfadds",
-		CreatedOn: time.Now().UTC().String(),
-		UpdatedOn: time.Now().UTC().String(),
+		SKU:         "dfadds",
+		CreatedOn:   time.Now().UTC().String(),
+		UpdatedOn:   time.Now().UTC().String(),
 	},
 }
