@@ -55,7 +55,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	if username == "andrea" && password == "test" {
 		fmt.Println("username and password are correct")
 		// create the token
-		token, err := getToken(username)
+		token, err := createToken(username)
 		if err != nil {
 			utils.ReturnError(&w, `{"message": "please provide username and password to get the token"}`, http.StatusBadRequest)
 			return
@@ -69,8 +69,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// getToken creates the JWT token
-func getToken(name string) (string, error) {
+// createToken creates the JWT token
+func createToken(name string) (string, error) {
 	signingKey := []byte(utils.Server.TokenPwd)
 	// set expiration to 30 seconds
 	expTime := time.Now().Add(5 * time.Minute).Unix()
