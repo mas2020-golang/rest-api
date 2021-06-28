@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"context"
@@ -111,8 +111,8 @@ func (a *App) shutdown(ctx context.Context, s *http.Server) {
 func (a *App) initRoutes() {
 	// new handler object
 	ph := handlers.NewProducts(l, a.DBPool)
-	//gb := handlers.NewGoodBye(l)
-	//a.Router.Use(handlers.AuthMiddleware)
+	// common middleware valid for all the calls
+	a.Router.Use(commonMiddleware)
 
 	// products sub router (for every call is checked the Token, for POST and PUT is also used the validation middleware
 	prodRouter := a.Router.PathPrefix("/products").Subrouter()
@@ -128,4 +128,11 @@ func (a *App) initRoutes() {
 	// login handler
 	a.Router.HandleFunc("/login", handlers.Login).Methods(http.MethodPost)
 
+}
+
+func commonMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Content-Type", "application/json")
+		next.ServeHTTP(w, r)
+	})
 }

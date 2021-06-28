@@ -12,7 +12,6 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"io"
 	"regexp"
-	"time"
 )
 
 // Product defines the structure for an API product
@@ -28,7 +27,10 @@ type Product struct {
 }
 
 // custom errors
-var RecordNotFound = fmt.Errorf("product not found")
+var (
+	RecordNotFound = fmt.Errorf("product not found")
+	Products ProductsT = ProductsT{}
+)
 
 // Validate the structure
 func (p *Product) Validate() error {
@@ -58,61 +60,34 @@ func (p *Product) ToJSON() ([]byte, error) {
 	return json.Marshal(p)
 }
 
-// Get the product reading db
-func (p *Product) Get(pool *pgxpool.Pool) error {
-	row := pool.QueryRow(context.Background(), "SELECT id, name, price FROM products WHERE id=$1",
-		p.ID)
-	return row.Scan(&p.ID, &p.Name, &p.Price)
+// ProductsT type to return directly a slice of Product
+type ProductsT []*Product
+
+// ToJSON encode the Products object into a json representation in []byte
+func (p *ProductsT) ToJSON() ([]byte, error) {
+	return json.Marshal(p)
 }
 
-// Add a new product to the internal slice of ProductsType
-func (p *Product) Add(pool *pgxpool.Pool) error {
-	err := pool.QueryRow(context.Background(),
-		"INSERT INTO products(name, price) VALUES($1, $2) RETURNING id",
-		p.Name, p.Price).Scan(&p.ID)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Update the product in the collection
-func (p *Product) Update(pool *pgxpool.Pool) error {
-	tag, err := pool.Exec(context.Background(), "UPDATE products SET name = $1, price = $2 WHERE id = $3",
-		p.Name, p.Price, p.ID)
-	if err != nil {
-		return err
-	}
-	if tag.RowsAffected() != 1 {
-		return RecordNotFound
-	}
-	return nil
-}
-
-// ProductsType type to return directly a slice of Product
-type ProductsType []*Product
-
-// ToJSON encode the ProductsType object and write it into the writer
-// passed as argument
-func (p *ProductsType) ToJSON(w io.Writer) error {
-	e := json.NewEncoder(w)
-	return e.Encode(p)
-}
-
-func (p *ProductsType) GetProducts(pool *pgxpool.Pool) (ProductsType, error) {
-	var productList = ProductsType{}
+// GetAll returns a slice of *Product.
+func (p *ProductsT) GetAll(pool *pgxpool.Pool) (ProductsT, error) {
+	var productList ProductsT
 	rows, err := pool.Query(context.Background(), "SELECT * FROM products")
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
+	/*
+	    id SERIAL,
+	    name TEXT NOT NULL,
+	    description TEXT NOT NULL,
+	    price NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+	    sku varchar(100),
+	 */
 	// iterate through the result set
 	for rows.Next() {
 		p := Product{}
-		err = rows.Scan(&p.ID, &p.Name, &p.Price)
+		err = rows.Scan(&p.ID, &p.Name, &p.Description, &p.Price, &p.SKU)
 		if err != nil {
 			return nil, err
 		}
@@ -127,37 +102,37 @@ func (p *ProductsType) GetProducts(pool *pgxpool.Pool) (ProductsType, error) {
 	return productList, nil
 }
 
-// findProduct returns the position of the product in the list or -1 in case of not found
-func findProduct(id int) int {
-	idx := -1
-	for i, prodItem := range productList {
-		if prodItem.ID == id {
-			idx = i
-			break
-		}
-	}
-	return idx
+// Get the product reading db. All the fields are stored in the *Product object returned by the method.
+func (p *ProductsT) Get(pool *pgxpool.Pool, id int) (prod *Product, err error) {
+	row := pool.QueryRow(context.Background(), "SELECT * FROM products WHERE id=$1",
+		id)
+	prod = new(Product)
+	err = row.Scan(&prod.ID, &prod.Name, &prod.Description, &prod.Price, &prod.SKU)
+	return prod, err
 }
 
-var Products ProductsType = ProductsType{}
+// Add a new product to the products table
+func (p *ProductsT) Add(pool *pgxpool.Pool, new *Product) error {
+	err := pool.QueryRow(context.Background(),
+		"INSERT INTO products(name, price, description, sku) VALUES($1, $2, $3, $4) RETURNING id",
+		(*new).Name, (*new).Price, (*new).Description, (*new).SKU).Scan(&new.ID)
 
-var productList = ProductsType{
-	&Product{
-		ID:          1,
-		Name:        "Latte",
-		Description: "Frothy milky coffee",
-		Price:       2.45,
-		SKU:         "dfad",
-		CreatedOn:   time.Now().UTC().String(),
-		UpdatedOn:   time.Now().UTC().String(),
-	},
-	&Product{
-		ID:          2,
-		Name:        "Espresso",
-		Description: "Short and strong coffee",
-		Price:       1.99,
-		SKU:         "dfadds",
-		CreatedOn:   time.Now().UTC().String(),
-		UpdatedOn:   time.Now().UTC().String(),
-	},
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Update the product in the collection
+func (p *ProductsT) Update(pool *pgxpool.Pool, prod *Product) error {
+	tag, err := pool.Exec(context.Background(), "UPDATE products SET name = $1, price = $2, " +
+		"description = $3, sku = $4 WHERE id = $5",
+		prod.Name, prod.Price, prod.Description, prod.SKU, prod.ID)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() != 1 {
+		return RecordNotFound
+	}
+	return nil
 }

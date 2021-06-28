@@ -7,10 +7,10 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/mas2020-golang/rest-api/data"
+	"github.com/mas2020-golang/rest-api/utils"
 	"log"
 	"net/http"
 	"strconv"
@@ -28,18 +28,21 @@ func NewProducts(l *log.Logger, pool *pgxpool.Pool) *Products {
 func (p *Products) GetProducts(w http.ResponseWriter, r *http.Request) {
 	p.l.Println("handle GET Products")
 	// get the claims
-	claims, _ := r.Context().Value("claims").(jwt.MapClaims) // cast the interface{} to jwt.MapClaims
-	p.l.Printf("claims data in the context are %#v", claims)
+	//claims, _ := r.Context().Value("claims").(jwt.MapClaims) // cast the interface{} to jwt.MapClaims
+	//p.l.Printf("claims data in the context are %#v", claims)
 
-	lp, err := data.Products.GetProducts(p.pool)
+	lp, err := data.Products.GetAll(p.pool)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.ReturnError(&w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	// return JSON to the caller
-	err = lp.ToJSON(w)
+	json, err := lp.ToJSON()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.ReturnError(&w, err.Error(), http.StatusInternalServerError)
+		return
 	}
+	w.Write(json)
 }
 
 func (p *Products) GetProduct(w http.ResponseWriter, r *http.Request) {
@@ -48,43 +51,41 @@ func (p *Products) GetProduct(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, `{"message": "{id} not found in the path"}`, http.StatusBadRequest)
+		utils.ReturnError(&w, "{id} not found in the path", http.StatusNotFound)
 		return
 	}
-	prod := &data.Product{ID: id}
-	err = prod.Get(p.pool)
+	prod, err := data.Products.Get(p.pool, id)
 	if err != nil {
-		http.Error(w, `{"message": "product not found"}`, http.StatusNotFound)
+		utils.ReturnError(&w, fmt.Sprintf("product not found (%s)", err.Error()), http.StatusNotFound)
 		return
 	}
 	json, err := prod.ToJSON()
 	if err != nil {
-		http.Error(w, fmt.Sprintf(`{"message": "%s"}`, err.Error()), http.StatusInternalServerError)
+		utils.ReturnError(&w, err.Error(), http.StatusNotFound)
 		return
 	}
 	w.Write(json)
 }
 
 func (p *Products) AddProduct(w http.ResponseWriter, r *http.Request) {
-	p.l.Println("handle POST Product")
+	p.l.Println("handle POST /products")
 	// take the product from the request context. The product has been inserted into the context from the middleware function
 	// call
 	prod, _ := r.Context().Value("prod").(*data.Product) // cast the interface{} to *data.Product
 	p.l.Printf("product from http body is %#v", prod)
-	err := prod.Add(p.pool)
+	err := data.Products.Add(p.pool, prod)
 	if err != nil {
-		http.Error(w, "error occurred during product creation", http.StatusInternalServerError)
+		utils.ReturnError(&w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
-	jsonResp, err := prod.ToJSON()
-	//p.l.Printf("json marshal of product is: %s", string(jsonResp))
+	jsonBody, err := prod.ToJSON()
 	if err != nil {
-		http.Error(w, "failed to represent json object", http.StatusInternalServerError)
-		p.l.Printf("failed to represent json object: %s", err.Error())
+		utils.ReturnError(&w, fmt.Sprintf("error to marshall json response, %s", err.Error()),
+			http.StatusInternalServerError)
 		return
 	}
-	w.Write(jsonResp)
+	w.Write(jsonBody)
 }
 
 // UpdateProduct is the handler for the update of a single product
@@ -102,12 +103,16 @@ func (p *Products) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	prod, _ := r.Context().Value("prod").(*data.Product) // cast the interface{} to *data.Product
 	p.l.Printf("product data received are %#v", prod)
 	prod.ID = id
-	err = prod.Update(p.pool)
-	// error check
-	switch err {
-	case data.RecordNotFound:
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return
+	err = data.Products.Update(p.pool, prod)
+	if err != nil {
+		// error check
+		switch err {
+		case data.RecordNotFound:
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusNoContent)
