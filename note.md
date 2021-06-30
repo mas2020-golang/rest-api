@@ -4,7 +4,6 @@
 
 This paragraph contains a list of features we need, and we have not implemented yet in the project.
 
-- **[✔]** add **goutils** to the project to better format the output
 - **[TODO]** add a **YAML configuration file** to the project
 - **[TODO]** review the test part to ensure a dedicated container only for testing purposes (as done in the postgresql go lab)
 - **[✔︎]** add the **test section** where to test every method before implementing it
@@ -15,3 +14,4 @@ This paragraph contains a list of features we need, and we have not implemented 
   To create the token use a random pwd that is a random UUID v4, for the package to use take a look [here](https://pkg.go.dev/github.com/google/uuid#section-readme).
 - **[✔]** update the test code to include the token
 - **[✔]** change the code to read username and password from a json body instead of a form
+- **[✔]** add **goutils** to the project to better format the output
