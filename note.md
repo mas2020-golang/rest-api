@@ -13,3 +13,5 @@ This paragraph contains a list of features we need, and we have not implemented 
 - **[✔︎]** add **JWT authorization** as a middleware layer (take a look first at https://github.com/pinbar/go-mux-jwt,
   the original library can be found [here](https://github.com/dgrijalva/jwt-go))
   To create the token use a random pwd that is a random UUID v4, for the package to use take a look [here](https://pkg.go.dev/github.com/google/uuid#section-readme).
+- **[✔]** update the test code to include the token
+- **[✔]** change the code to read username and password from a json body instead of a form

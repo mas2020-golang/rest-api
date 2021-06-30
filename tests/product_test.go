@@ -1,23 +1,28 @@
-package main
+package tests
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/mas2020-golang/rest-api/data"
+	"github.com/mas2020-golang/rest-api/server"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 )
 
-var a App
+var a server.App
+var token string
 
 const tableCreationQuery = `CREATE TABLE IF NOT EXISTS products
 (
     id SERIAL,
     name TEXT NOT NULL,
+    description TEXT NOT NULL,
     price NUMERIC(10,2) NOT NULL DEFAULT 0.00,
     CONSTRAINT products_pkey PRIMARY KEY (id)
 )`
@@ -46,6 +51,25 @@ func checkResponseCode(t *testing.T, expected, actual int) {
 	}
 }
 
+func generateToken() string {
+	buf := bytes.Buffer{}
+	body := `{
+"username": "andrea",
+"password": "test"
+}`
+	buf.Write([]byte(body))
+	req, _ := http.NewRequest("POST", "/login", &buf)
+	req.Header.Set("Content-Type", "multipart/form-data")
+	response := executeRequest(req)
+	var m map[string]string
+	json.Unmarshal(response.Body.Bytes(), &m)
+	if response.Code == 400{
+		log.Printf("%s", response.Body.String())
+		os.Exit(1)
+	}
+	return m["token"]
+}
+
 func TestMain(m *testing.M) {
 	a.Initialize(
 		os.Getenv("APP_DB_USERNAME"),
@@ -54,6 +78,8 @@ func TestMain(m *testing.M) {
 		os.Getenv("APP_DB_NAME"))
 
 	ensureTableExists()
+	// get the token
+	token = generateToken()
 	// all the tests are executed by calling m.Run()
 	code := m.Run()
 	// after test execution the table test data are deleted
@@ -71,14 +97,28 @@ func TestEmptyTable(t *testing.T) {
 	if body := response.Body.String(); body == "" {
 		t.Errorf("Expected an error response %s", body)
 	}
+	// do the call using the token
+	//t.Logf("token is %s", token)
+	req.Header.Set("Authorization", "Bearer " + token)
+	response = executeRequest(req)
+	checkResponseCode(t, http.StatusOK, response.Code)
+	if strings.Trim(response.Body.String(), "\n") != "null" {
+		t.Errorf("Expected body == null, got %v", response.Body.String())
+	}
 }
 
 func TestCreateProduct(t *testing.T) {
 	clearTable()
-	var jsonStr = []byte(`{"name":"test product", "price": 11.22, "sku": "dfr-fadf-adfa"}`)
+	var jsonStr = []byte(`
+{
+	"name":"test product", 
+	"price": 11.22, 
+	"sku": "dfr-fadf-adfa"
+}
+`)
 	req, _ := http.NewRequest("POST", "/products", bytes.NewBuffer(jsonStr))
 	req.Header.Set("Content-Type", "application/json")
-
+	req.Header.Add("Authorization", "Bearer " + token)
 	response := executeRequest(req)
 	checkResponseCode(t, http.StatusCreated, response.Code)
 
@@ -100,8 +140,37 @@ func TestCreateProduct(t *testing.T) {
 	}
 }
 
-func TestUpdateProduct(t *testing.T) {
+func TestGetsProduct(t *testing.T) {
+	clearTable()
+	// insert 5 fake products
+	for i := 0; i < 5; i++ {
+		// add new Product to test the update
+		p := data.Product{
+			Name:        fmt.Sprintf("test-%d", i),
+			Description: fmt.Sprintf("test-%d", i),
+			Price:       100+float32(i),
+			SKU:         "dsda-asd-asd",
+		}
+		err := data.Products.Add(a.DBPool, &p)
+		if err != nil {
+			t.Error("error occurred during the product creation")
+		}
+	}
 
+	// first store info on the existing resource
+	req, _ := http.NewRequest("GET", "/products", nil)
+	req.Header.Add("Authorization", "Bearer " + token)
+	response := executeRequest(req)
+	checkResponseCode(t, http.StatusOK, response.Code)
+	// check the content
+	var products []map[string]interface{}
+	json.Unmarshal(response.Body.Bytes(), &products)
+	if len(products) != 5 {
+		t.Errorf("Expected 5 products. Got %d", len(products))
+	}
+}
+
+func TestUpdateProduct(t *testing.T) {
 	clearTable()
 	// add new Product to test the update
 	p := data.Product{
@@ -111,24 +180,32 @@ func TestUpdateProduct(t *testing.T) {
 		Price:       100,
 		SKU:         "dsda-asd-asd",
 	}
-	err := p.Add(a.DBPool)
+	err := data.Products.Add(a.DBPool, &p)
 	if err != nil {
 		t.Error("error occurred during the product creation")
 	}
+	// first store info on the existing resource
 	req, _ := http.NewRequest("GET", "/products/1", nil)
+	req.Header.Add("Authorization", "Bearer " + token)
 	response := executeRequest(req)
 	checkResponseCode(t, http.StatusOK, response.Code)
+
 	var originalProduct map[string]interface{}
 	json.Unmarshal(response.Body.Bytes(), &originalProduct)
 
+	// update call
 	var jsonStr = []byte(`{"name":"test product - updated name", "price": 11.22,"sku": "dfr-fadf-adfa"}`)
 	req, _ = http.NewRequest("PUT", "/products/1", bytes.NewBuffer(jsonStr))
 	req.Header.Set("Content-Type", "application/json")
-
+	req.Header.Add("Authorization", "Bearer " + token)
 	response = executeRequest(req)
+	checkResponseCode(t, http.StatusNoContent, response.Code)
 
-	checkResponseCode(t, http.StatusCreated, response.Code)
-
+	// get call to read the existing resource values
+	req, _ = http.NewRequest("GET", "/products/1", nil)
+	req.Header.Add("Authorization", "Bearer " + token)
+	response = executeRequest(req)
+	checkResponseCode(t, http.StatusOK, response.Code)
 	var m map[string]interface{}
 	json.Unmarshal(response.Body.Bytes(), &m)
 
@@ -137,10 +214,12 @@ func TestUpdateProduct(t *testing.T) {
 	}
 
 	if m["name"] == originalProduct["name"] {
-		t.Errorf("Expected the name to change from '%v' to '%v'. Got '%v'", originalProduct["name"], m["name"], m["name"])
+		t.Errorf("Expected the name to change from '%v' to '%v'. Got '%v'", originalProduct["name"],
+			"test product - updated name", m["name"])
 	}
 
 	if m["price"] == originalProduct["price"] {
-		t.Errorf("Expected the price to change from '%v' to '%v'. Got '%v'", originalProduct["price"], m["price"], m["price"])
+		t.Errorf("Expected the price to change from '%v' to '%v'. Got '%v'", originalProduct["price"],
+			11.22, m["price"])
 	}
 }

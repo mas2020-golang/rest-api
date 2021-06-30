@@ -7,11 +7,11 @@ extra packages to realize a full REST api server.
 
 This is the list of the reference to the resource that we are going to use in the application:
 
-- Gorilla Mux, official documentation can be found [here](https://www.gorillatoolkit.org/). The Gorilla world on github
+- **Gorilla Mux**, official documentation can be found [here](https://www.gorillatoolkit.org/). The Gorilla world on github
   is [here](https://github.com/gorilla).
-- Validation of JSON object is done using the package ***validator***. The repository can be
+- **Validation of JSON** object is done using the package ***validator***. The repository can be
   found [here](https://github.com/go-playground/validator).
-- To connect to PostgreSQL has been used the [pgx](https://pkg.go.dev/github.com/jackc/pgx) package
+- To connect to PostgreSQL I used the [pgx](https://pkg.go.dev/github.com/jackc/pgx) package
 
 For the principles to follow when creating a REST API application take a look at
 this [article](https://docs.microsoft.com/en-us/azure/architecture/best-practices/api-design).
@@ -21,8 +21,13 @@ this [article](https://docs.microsoft.com/en-us/azure/architecture/best-practice
 Before to start ensure to have the correct packages:
 
 ```shell
-go get github.com/jackc/pgx/v4
-go get github.com/jackc/pgx/v4/pgxpool
+require (
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/go-playground/validator v9.31.0+incompatible
+	github.com/google/uuid v1.2.0
+	github.com/gorilla/mux v1.8.0
+	github.com/jackc/pgx/v4 v4.11.0
+)
 ```
 
 ## Structure of the application
@@ -58,22 +63,24 @@ go run *.go
 
 To test, first add the environment variables, then execute:
 ```shell
-go test -v
+go test -v github.com/mas2020-golang/rest-api/tests
 ```
 
-## Curl examples for the 'product' handler
+## Curl examples for the 'products' handler
 
 - **LOGIN** to the application
 
 ```shell
 curl -v -s -X POST http://localhost:9090/login \
 -H "Content-Type: multipart/form-data" \
--F 'username=andrea' -F 'password=test' | jq
+-F 'username=andrea' -F 'password=test' | jq | \
+sed 's+\([a-zA-Z0-9]*\.[a-zA-Z0-9]*\.[a-zA-Z0-9]*\).*+\1+'
 ```
 
 - **GET** all the products
-export TOKEN=
+
 ```shell
+export TOKEN=
 curl -v -s  http://localhost:9090/products \
 -H "Authorization: Bearer ${TOKEN}" | jq
 ```
@@ -85,7 +92,7 @@ curl -v -s  http://localhost:9090/products/1 \
 -H "Authorization: Bearer {token}" | jq
 ```
 
-- **POST** the new product
+- **CREATE** a new product
 
 ```shell
 curl -s -X POST http://localhost:9090/products \
@@ -100,7 +107,7 @@ curl -s -X POST http://localhost:9090/products \
 EOF
 ```
 
-- **PUT** the product
+- **UPDATE** an existing product
 
 ```shell
 curl -s -i -X PUT http://localhost:9090/products/1 \

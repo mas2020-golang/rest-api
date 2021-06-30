@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/mas2020-golang/rest-api/utils"
@@ -44,8 +45,13 @@ func AuthMiddleware(next http.Handler) http.Handler {
 // Login verifies username and password and create a JWT token in return.
 func Login(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Login handler func execution")
-	username := r.FormValue("username")
-	password := r.FormValue("password")
+	// unmarshall json body
+	var jBody map[string]string
+	e := json.NewDecoder(r.Body)
+	e.Decode(&jBody)
+
+	username := jBody["username"]
+	password := jBody["password"]
 
 	if len(username) == 0 || len(password) == 0 {
 		utils.ReturnError(&w, `{"message": "please provide username and password to get the token"}`, http.StatusBadRequest)

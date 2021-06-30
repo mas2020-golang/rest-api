@@ -1,10 +1,13 @@
 package main
 
-import "os"
+import (
+	"github.com/mas2020-golang/rest-api/server"
+	"os"
+)
 
 func main() {
 	// start the application
-	a := App{}
+	a := server.App{}
 	a.Initialize(
 		os.Getenv("APP_DB_USERNAME"),
 		os.Getenv("APP_DB_PASSWORD"),
