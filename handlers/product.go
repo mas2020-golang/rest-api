@@ -9,24 +9,23 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/mas2020-golang/goutils/output"
 	"github.com/mas2020-golang/rest-api/data"
 	"github.com/mas2020-golang/rest-api/utils"
-	"log"
 	"net/http"
 	"strconv"
 )
 
 type Products struct {
-	l    *log.Logger
 	pool *pgxpool.Pool
 }
 
-func NewProducts(l *log.Logger, pool *pgxpool.Pool) *Products {
-	return &Products{l, pool}
+func NewProducts(pool *pgxpool.Pool) *Products {
+	return &Products{pool}
 }
 
 func (p *Products) GetProducts(w http.ResponseWriter, r *http.Request) {
-	p.l.Println("handle GET Products")
+	output.InfoLog("", "GET /products")
 	// get the claims
 	//claims, _ := r.Context().Value("claims").(jwt.MapClaims) // cast the interface{} to jwt.MapClaims
 	//p.l.Printf("claims data in the context are %#v", claims)
@@ -46,7 +45,6 @@ func (p *Products) GetProducts(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *Products) GetProduct(w http.ResponseWriter, r *http.Request) {
-	p.l.Println("handle GET Product")
 	// retrieve the id from the path
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
@@ -54,6 +52,7 @@ func (p *Products) GetProduct(w http.ResponseWriter, r *http.Request) {
 		utils.ReturnError(&w, "{id} not found in the path", http.StatusNotFound)
 		return
 	}
+	output.InfoLog("", fmt.Sprintf("GET /products/%d", id))
 	prod, err := data.Products.Get(p.pool, id)
 	if err != nil {
 		utils.ReturnError(&w, fmt.Sprintf("product not found (%s)", err.Error()), http.StatusNotFound)
@@ -68,11 +67,11 @@ func (p *Products) GetProduct(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *Products) AddProduct(w http.ResponseWriter, r *http.Request) {
-	p.l.Println("handle POST /products")
+	output.InfoLog("", "POST /products")
 	// take the product from the request context. The product has been inserted into the context from the middleware function
 	// call
 	prod, _ := r.Context().Value("prod").(*data.Product) // cast the interface{} to *data.Product
-	p.l.Printf("product from http body is %#v", prod)
+	output.DebugLog("", fmt.Sprintf("product content in http body: %#v", prod))
 	err := data.Products.Add(p.pool, prod)
 	if err != nil {
 		utils.ReturnError(&w, err.Error(), http.StatusInternalServerError)
@@ -97,11 +96,11 @@ func (p *Products) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "{id} not found in the path", http.StatusBadRequest)
 		return
 	}
-	p.l.Printf("Handle PUT Product with id %d", id)
+	output.InfoLog("", fmt.Sprintf("PUT /products/%d", id))
 	// take the product from the request context. The product has been inserted into the context from the middleware function
 	// call
 	prod, _ := r.Context().Value("prod").(*data.Product) // cast the interface{} to *data.Product
-	p.l.Printf("product data received are %#v", prod)
+	output.DebugLog("", fmt.Sprintf("product content in http body: %#v", prod))
 	prod.ID = id
 	err = data.Products.Update(p.pool, prod)
 	if err != nil {
@@ -123,13 +122,11 @@ func (p *Products) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 // context in the request and serve the next handler in the chain
 func (p *Products) MiddlewareProductValidation(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		p.l.Println("MiddlewareProductValidation func execution")
 		prod := &data.Product{}
 		if err := prod.FromJSON(r.Body); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		p.l.Println("product middleware validation")
 		if err := prod.Validate(); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return

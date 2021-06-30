@@ -4,7 +4,7 @@
 
 This paragraph contains a list of features we need, and we have not implemented yet in the project.
 
-- **[TODO]** add **goutils** to the project to better format the output
+- **[✔]** add **goutils** to the project to better format the output
 - **[TODO]** add a **YAML configuration file** to the project
 - **[TODO]** review the test part to ensure a dedicated container only for testing purposes (as done in the postgresql go lab)
 - **[✔︎]** add the **test section** where to test every method before implementing it

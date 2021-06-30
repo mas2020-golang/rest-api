@@ -59,6 +59,11 @@ finally execute the application typing:
 go run *.go
 ```
 
+to start having a file log you can use the redirection of the standard output:
+```shell
+go run *.go > rest-api.log
+```
+
 ## Test the application
 
 To test, first add the environment variables, then execute:

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/mas2020-golang/goutils/output"
 	"github.com/mas2020-golang/rest-api/utils"
 	"net/http"
 	"strings"
@@ -13,7 +14,6 @@ import (
 
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("AuthMiddleware func execution")
 		token := r.Header.Get("Authorization")
 		// starts with Bearer?
 		if !strings.HasPrefix(token, "Bearer") {
@@ -30,7 +30,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 		mapClaims := claims.(jwt.MapClaims)
-		fmt.Printf("received these claims: %v\n", claims)
+		output.DebugLog("", fmt.Sprintf("received these claims: %v", claims))
 		// inject token info into the call context
 		// context creation to store product
 		ctx := context.WithValue(r.Context(), "claims", mapClaims)
@@ -44,7 +44,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 
 // Login verifies username and password and create a JWT token in return.
 func Login(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Login handler func execution")
+	//fmt.Println("Login handler func execution")
 	// unmarshall json body
 	var jBody map[string]string
 	e := json.NewDecoder(r.Body)
@@ -59,7 +59,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 	// in a real scenario the user and password are checked on a database
 	if username == "andrea" && password == "test" {
-		fmt.Println("username and password are correct")
 		// create the token
 		token, err := createToken(username)
 		if err != nil {

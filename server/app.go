@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/mas2020-golang/goutils/output"
 	"github.com/mas2020-golang/rest-api/handlers"
 	"github.com/mas2020-golang/rest-api/utils"
-	"log"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 	"os/signal"
@@ -16,7 +17,7 @@ import (
 
 // preliminary stuff
 var (
-	l      = log.New(os.Stdout, "", log.LstdFlags) // logger
+	//l      = log.New(os.Stdout, "", log.LstdFlags) // logger
 	config *pgxpool.Config
 )
 
@@ -27,19 +28,20 @@ type App struct {
 
 func (a *App) Initialize(user, password, host, dbname string) {
 	var err error
+
+	// log settings
+	logrus.SetLevel(logrus.TraceLevel)
+	logrus.SetFormatter(&output.TextFormatter{})
+	logrus.SetOutput(os.Stdout)
+
 	// connection to the database
 	connectionString := fmt.Sprintf("postgres://%s:%s@%s:5432/%s", user, password, host, dbname)
 	config, err = pgxpool.ParseConfig(connectionString)
-	if err != nil {
-		l.Fatal("check the connection string:", err.Error())
-	}
+	output.CheckErrorAndExitLog("","check the connection string: ", err)
 
 	a.DBPool, err = pgxpool.ConnectConfig(context.Background(), config)
-	if err != nil {
-		l.Fatal("unable to connect to database: ", err)
-	} else {
-		l.Println("connection to the database OK!")
-	}
+	output.CheckErrorAndExitLog("","unable to connect to database: ", err)
+	output.InfoLog("", "connection to the database OK!")
 
 	a.Router = mux.NewRouter()
 	// create a pwd for the JWT signing algorithm
@@ -61,26 +63,25 @@ func (a *App) Run(addr string) {
 
 	// start the server in a separate go routine
 	go func() {
-		l.Println("starting http server...")
+		output.InfoLog("", "starting http server...")
 		s.ListenAndServe()
+		output.InfoLog("", "closing http server...")
 	}()
 
-	time.Sleep(time.Millisecond * 200)
-	l.Println("http server is ready to accept connections")
+	time.Sleep(time.Millisecond * 100)
+	output.InfoLog("", "http server is ready to accept connections")
 	// wait for a signal to shutdown the server
 	sigChan := make(chan os.Signal)
 	signal.Notify(sigChan, os.Interrupt)
-	signal.Notify(sigChan, os.Kill)
 
 	// read from the channel
 	sig := <-sigChan
-	l.Printf("received the %v signal", sig)
+	output.InfoLog("", fmt.Sprintf("received the %v signal", sig))
 
 	// gracefully shutdown the server (after 10 seconds server is shutdown)
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	//s.Shutdown(tc)
 	a.shutdown(ctx, s)
-	l.Println("shutting down, bye")
+	output.InfoLog("", "shutting down bye!")
 	os.Exit(0)
 }
 
@@ -88,21 +89,21 @@ func (a *App) Run(addr string) {
 func (a *App) shutdown(ctx context.Context, s *http.Server) {
 	c := make(chan string)
 	go func() {
-		l.Println("some long running stuff...")
+		output.TraceLog("", "some long running stuff...")
 		// db connection: close the pool
-		l.Printf("closing db connections...")
+		output.DebugLog("", "closing db connections...")
 		a.DBPool.Close()
-		l.Println("closing db connections done!")
+		output.DebugLog("", "closing db connections done!")
 		time.Sleep(time.Millisecond * 200)
 		c <- "cleanup operations done!"
 	}()
 
 	select {
 	case done := <-c:
-		l.Println("normal shutdown:", done)
+		output.InfoLog("", fmt.Sprintf("normal shutdown: %s", done))
 		s.Shutdown(ctx)
 	case <-ctx.Done():
-		l.Println("elapsed timeout:", ctx.Err())
+		output.InfoLog("", "elapsed timeout")
 		s.Shutdown(ctx)
 	}
 }
@@ -110,7 +111,7 @@ func (a *App) shutdown(ctx context.Context, s *http.Server) {
 // initRoutes inits the routes for the application
 func (a *App) initRoutes() {
 	// new handler object
-	ph := handlers.NewProducts(l, a.DBPool)
+	ph := handlers.NewProducts(a.DBPool)
 	// common middleware valid for all the calls
 	a.Router.Use(commonMiddleware)
 
