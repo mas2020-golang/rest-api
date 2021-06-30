@@ -59,12 +59,18 @@ finally execute the application typing:
 go run *.go
 ```
 
+to start having a file log you can use the redirection of the standard output:
+```shell
+go run *.go > rest-api.log
+```
+
 ## Test the application
 
 To test, first add the environment variables, then execute:
 ```shell
-go test -v github.com/mas2020-golang/rest-api/tests
+go test github.com/mas2020-golang/rest-api/test/...
 ```
+to have more information add the `-v` flag.
 
 ## Curl examples for the 'products' handler
 
@@ -97,7 +103,7 @@ curl -v -s  http://localhost:9090/products/1 \
 ```shell
 curl -s -X POST http://localhost:9090/products \
 -H "Authorization: Bearer {token}" \
---data-binary @- << EOF | jq
+--models-binary @- << EOF | jq
 {
     "name": "Espresso 2",
     "description": "Short and strong coffee",
@@ -112,7 +118,7 @@ EOF
 ```shell
 curl -s -i -X PUT http://localhost:9090/products/1 \
 -H "Authorization: Bearer {token}" \
---data-binary @- << EOF
+--models-binary @- << EOF
 {
     "name": "Espresso 900",
     "description": "More than a coffee",
