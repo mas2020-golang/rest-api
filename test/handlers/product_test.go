@@ -1,11 +1,11 @@
-package tests
+package handlers
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/mas2020-golang/rest-api/data"
+	"github.com/mas2020-golang/rest-api/models"
 	"github.com/mas2020-golang/rest-api/server"
 	"log"
 	"net/http"
@@ -59,7 +59,7 @@ func generateToken() string {
 }`
 	buf.Write([]byte(body))
 	req, _ := http.NewRequest("POST", "/login", &buf)
-	req.Header.Set("Content-Type", "multipart/form-data")
+	req.Header.Set("Content-Type", "multipart/form-models")
 	response := executeRequest(req)
 	var m map[string]string
 	json.Unmarshal(response.Body.Bytes(), &m)
@@ -80,9 +80,9 @@ func TestMain(m *testing.M) {
 	ensureTableExists()
 	// get the token
 	token = generateToken()
-	// all the tests are executed by calling m.Run()
+	// all the test are executed by calling m.Run()
 	code := m.Run()
-	// after test execution the table test data are deleted
+	// after test execution the table test models are deleted
 	clearTable()
 	os.Exit(code)
 }
@@ -99,7 +99,7 @@ func TestEmptyTable(t *testing.T) {
 	}
 	// do the call using the token
 	//t.Logf("token is %s", token)
-	req.Header.Set("Authorization", "Bearer " + token)
+	req.Header.Set("Authorization", "Bearer " +token)
 	response = executeRequest(req)
 	checkResponseCode(t, http.StatusOK, response.Code)
 	if strings.Trim(response.Body.String(), "\n") != "null" {
@@ -118,7 +118,7 @@ func TestCreateProduct(t *testing.T) {
 `)
 	req, _ := http.NewRequest("POST", "/products", bytes.NewBuffer(jsonStr))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Add("Authorization", "Bearer " + token)
+	req.Header.Add("Authorization", "Bearer " +token)
 	response := executeRequest(req)
 	checkResponseCode(t, http.StatusCreated, response.Code)
 
@@ -145,13 +145,13 @@ func TestGetsProduct(t *testing.T) {
 	// insert 5 fake products
 	for i := 0; i < 5; i++ {
 		// add new Product to test the update
-		p := data.Product{
+		p := models.Product{
 			Name:        fmt.Sprintf("test-%d", i),
 			Description: fmt.Sprintf("test-%d", i),
 			Price:       100+float32(i),
 			SKU:         "dsda-asd-asd",
 		}
-		err := data.Products.Add(a.DBPool, &p)
+		err := models.Products.Add(a.DBPool, &p)
 		if err != nil {
 			t.Error("error occurred during the product creation")
 		}
@@ -159,7 +159,7 @@ func TestGetsProduct(t *testing.T) {
 
 	// first store info on the existing resource
 	req, _ := http.NewRequest("GET", "/products", nil)
-	req.Header.Add("Authorization", "Bearer " + token)
+	req.Header.Add("Authorization", "Bearer " +token)
 	response := executeRequest(req)
 	checkResponseCode(t, http.StatusOK, response.Code)
 	// check the content
@@ -173,20 +173,20 @@ func TestGetsProduct(t *testing.T) {
 func TestUpdateProduct(t *testing.T) {
 	clearTable()
 	// add new Product to test the update
-	p := data.Product{
+	p := models.Product{
 		ID:          0,
 		Name:        "test",
 		Description: "test",
 		Price:       100,
 		SKU:         "dsda-asd-asd",
 	}
-	err := data.Products.Add(a.DBPool, &p)
+	err := models.Products.Add(a.DBPool, &p)
 	if err != nil {
 		t.Error("error occurred during the product creation")
 	}
 	// first store info on the existing resource
 	req, _ := http.NewRequest("GET", "/products/1", nil)
-	req.Header.Add("Authorization", "Bearer " + token)
+	req.Header.Add("Authorization", "Bearer " +token)
 	response := executeRequest(req)
 	checkResponseCode(t, http.StatusOK, response.Code)
 
@@ -197,13 +197,13 @@ func TestUpdateProduct(t *testing.T) {
 	var jsonStr = []byte(`{"name":"test product - updated name", "price": 11.22,"sku": "dfr-fadf-adfa"}`)
 	req, _ = http.NewRequest("PUT", "/products/1", bytes.NewBuffer(jsonStr))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Add("Authorization", "Bearer " + token)
+	req.Header.Add("Authorization", "Bearer " +token)
 	response = executeRequest(req)
 	checkResponseCode(t, http.StatusNoContent, response.Code)
 
 	// get call to read the existing resource values
 	req, _ = http.NewRequest("GET", "/products/1", nil)
-	req.Header.Add("Authorization", "Bearer " + token)
+	req.Header.Add("Authorization", "Bearer " +token)
 	response = executeRequest(req)
 	checkResponseCode(t, http.StatusOK, response.Code)
 	var m map[string]interface{}

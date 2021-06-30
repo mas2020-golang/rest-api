@@ -1,8 +1,8 @@
 /*
-Package data the structure (modeling) of the data.
-To avoid reading from a database the data are also inserted here.
+Package models the structure (modeling) of the models.
+To avoid reading from a database the models are also inserted here.
 */
-package data
+package models
 
 import (
 	"context"
