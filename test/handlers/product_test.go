@@ -18,11 +18,13 @@ import (
 var a server.App
 var token string
 
-const tableCreationQuery = `CREATE TABLE IF NOT EXISTS products
+const tableCreationQuery = `
+CREATE TABLE IF NOT EXISTS products
 (
     id SERIAL,
     name TEXT NOT NULL,
     description TEXT NOT NULL,
+    sku varchar(100),
     price NUMERIC(10,2) NOT NULL DEFAULT 0.00,
     CONSTRAINT products_pkey PRIMARY KEY (id)
 )`
@@ -140,7 +142,7 @@ func TestCreateProduct(t *testing.T) {
 	}
 }
 
-func TestGetsProduct(t *testing.T) {
+func TestGetProducts(t *testing.T) {
 	clearTable()
 	// insert 5 fake products
 	for i := 0; i < 5; i++ {
@@ -174,7 +176,6 @@ func TestUpdateProduct(t *testing.T) {
 	clearTable()
 	// add new Product to test the update
 	p := models.Product{
-		ID:          0,
 		Name:        "test",
 		Description: "test",
 		Price:       100,

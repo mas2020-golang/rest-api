@@ -71,7 +71,7 @@ func (p *ProductsT) ToJSON() ([]byte, error) {
 // GetAll returns a slice of *Product.
 func (p *ProductsT) GetAll(pool *pgxpool.Pool) (ProductsT, error) {
 	var productList ProductsT
-	rows, err := pool.Query(context.Background(), "SELECT * FROM products")
+	rows, err := pool.Query(context.Background(), "SELECT id, name, description, price, sku FROM products")
 	if err != nil {
 		return nil, err
 	}
