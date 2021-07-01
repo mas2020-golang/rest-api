@@ -1,0 +1,33 @@
+version: '3'
+
+services:
+  api-server:
+    build:
+      context: .
+    image: appway/rest-api:latest
+    restart: on-failure
+    depends_on:
+      - postgresql
+    environment:
+      - APP_DB_HOST=postgresql
+      - APP_DB_USERNAME=postgres
+      - APP_DB_PASSWORD=password
+      - APP_DB_NAME=postgres
+    ports:
+      - 9090:9090
+  postgresql:
+    image: postgres:13.2-alpine
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-q", "-d", "postgres", "-U", "postgres" ]
+      timeout: 45s
+      interval: 10s
+      retries: 10
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    ports:
+      - 5432:5432
+    volumes:
+      - ./scripts/db:/docker-entrypoint-initdb.d/
+

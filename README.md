@@ -1,14 +1,24 @@
-# rest-api
+# rest-api <!-- omit in toc -->
 
 Example project to build a rest API server with Go. The scope of this application is to use the smallest numbers of
 extra packages to realize a full REST api server.
+
+## Table of Content <!-- omit in toc -->
+
+- [Resources](#resources)
+- [Dependencies](#dependencies)
+- [Structure of the application](#structure-of-the-application)
+- [Start the application](#start-the-application)
+- [Test the application](#test-the-application)
+- [Curl examples for the 'products' handler](#curl-examples-for-the-products-handler)
+- [Run in a Docker container](#run-in-a-docker-container)
 
 ## Resources
 
 This is the list of the reference to the resource that we are going to use in the application:
 
-- **Gorilla Mux**, official documentation can be found [here](https://www.gorillatoolkit.org/). The Gorilla world on github
-  is [here](https://github.com/gorilla).
+- **Gorilla Mux**, official documentation can be found [here](https://www.gorillatoolkit.org/). The Gorilla world on
+  github is [here](https://github.com/gorilla).
 - **Validation of JSON** object is done using the package ***validator***. The repository can be
   found [here](https://github.com/go-playground/validator).
 - To connect to PostgreSQL I used the [pgx](https://pkg.go.dev/github.com/jackc/pgx) package
@@ -36,7 +46,7 @@ The application has these folders:
 
 - handlers: contains each http handler
 
-## Start the application
+## Start the application (for dev and test envs)
 
 To start the application, first set the correct environment variable:
 
@@ -47,10 +57,12 @@ export APP_DB_PASSWORD=password \
 export APP_DB_NAME=postgres
 ```
 
-then start a docker container as:
+then start a docker container to host postgres. The database will create all the needed tables simply executing the
+init ddl script that we attach as a volume:
 
 ```shell
-docker run  -d -p 5432:5432 -e POSTGRES_PASSWORD=password --name postgres_test postgres
+docker run --rm -d -p 5432:5432 -e POSTGRES_PASSWORD=password \
+-v ${PWD}/scripts/db:/docker-entrypoint-initdb.d/ --name postgres_test postgres
 ```
 
 finally execute the application typing:
@@ -60,16 +72,21 @@ go run *.go
 ```
 
 to start having a file log you can use the redirection of the standard output:
+
 ```shell
 go run *.go > rest-api.log
 ```
 
-## Test the application
+You can execute the Curl example calls to test the application.
+
+### Test the application
 
 To test, first add the environment variables, then execute:
+
 ```shell
 go test github.com/mas2020-golang/rest-api/test/...
 ```
+
 to have more information add the `-v` flag.
 
 ## Curl examples for the 'products' handler
@@ -79,8 +96,13 @@ to have more information add the `-v` flag.
 ```shell
 curl -v -s -X POST http://localhost:9090/login \
 -H "Content-Type: multipart/form-data" \
--F 'username=andrea' -F 'password=test' | jq | \
-sed 's+\([a-zA-Z0-9]*\.[a-zA-Z0-9]*\.[a-zA-Z0-9]*\).*+\1+'
+-d '
+{
+    "username": "andrea",
+    "password": "test"
+} 
+' | jq
+#sed 's+\([a-zA-Z0-9]*\.[a-zA-Z0-9]*\.[a-zA-Z0-9]*\).*+\1+'
 ```
 
 - **GET** all the products
@@ -127,5 +149,76 @@ curl -s -i -X PUT http://localhost:9090/products/1 \
 }
 EOF
 ```
+
+## Run as a Docker container
+
+To execute the application as a Docker container we need to use a composition. 
+This is intended for **_dev_** and **_test_** only environments.
+By this way we benefit from having **_postgres_** up and running somewhere. Our composition is made by:
+
+- docker container for **postgres 13.2**
+- docker container for our **rest-api server**
+
+To run the composition you need to have `docker-compose` installed on the machine. To start the solution you can type:
+
+```shell
+docker-compose up --build
+```
+
+`--build` option is to ensure you have the latest version of the docker image for the rest api server.
+
+### Executing test using Docker containers only
+
+To execute test using only containers (for example in order to pass some continuous integration build step)
+you have to create a network first:
+
+```shell
+docker network create --attachable rest-api-test
+```
+
+then you start your containers and attach to the right network (by this way the containers can see each other using the
+name). First start the postgres database as:
+
+```shell
+docker run --rm -d -p 5432:5432 -e POSTGRES_PASSWORD=password \
+-v ${PWD}/scripts/db:/docker-entrypoint-initdb.d/ \
+--network rest-api-test \
+--name postgres_test postgres
+```
+
+build the docker image for testing:
+```shell
+docker build -t appway/rest-api-test:latest -f Dockerfile.t .
+```
+
+then run the test as:
+```shell
+docker run --rm -it \
+-e APP_DB_HOST=postgres_test \
+-e APP_DB_USERNAME=postgres \
+-e APP_DB_PASSWORD=password \
+-e APP_DB_NAME=postgres \
+--network rest-api-test \
+--name rest-api-test appway/rest-api-test:latest
+```
+
+You can use these containers to test on the fly the application, and then you can remove everything afterwards.
+To simply execute the **test** you can use the preconfigured script:
+```shell
+./test.sh
+```
+
+## Deploy and start the application (for prod env) [TO COMPLETE]
+
+We assume for the production that you have:
+- postgresql database running on some host
+
+You can run the server as a docker container or compile it and executing on the server host.
+
+### Run as a docker container [TODO]
+...
+
+### Run as a compiled binary [TODO]
+...
 
 
