@@ -65,7 +65,7 @@ func generateToken() string {
 	response := executeRequest(req)
 	var m map[string]string
 	json.Unmarshal(response.Body.Bytes(), &m)
-	if response.Code == 400{
+	if response.Code == 400 {
 		log.Printf("%s", response.Body.String())
 		os.Exit(1)
 	}
@@ -101,7 +101,7 @@ func TestEmptyTable(t *testing.T) {
 	}
 	// do the call using the token
 	//t.Logf("token is %s", token)
-	req.Header.Set("Authorization", "Bearer " +token)
+	req.Header.Set("Authorization", "Bearer "+token)
 	response = executeRequest(req)
 	checkResponseCode(t, http.StatusOK, response.Code)
 	if strings.Trim(response.Body.String(), "\n") != "null" {
@@ -120,7 +120,7 @@ func TestCreateProduct(t *testing.T) {
 `)
 	req, _ := http.NewRequest("POST", "/products", bytes.NewBuffer(jsonStr))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Add("Authorization", "Bearer " +token)
+	req.Header.Add("Authorization", "Bearer "+token)
 	response := executeRequest(req)
 	checkResponseCode(t, http.StatusCreated, response.Code)
 
@@ -150,7 +150,7 @@ func TestGetProducts(t *testing.T) {
 		p := models.Product{
 			Name:        fmt.Sprintf("test-%d", i),
 			Description: fmt.Sprintf("test-%d", i),
-			Price:       100+float32(i),
+			Price:       100 + float32(i),
 			SKU:         "dsda-asd-asd",
 		}
 		err := models.Products.Add(a.DBPool, &p)
@@ -161,7 +161,7 @@ func TestGetProducts(t *testing.T) {
 
 	// first store info on the existing resource
 	req, _ := http.NewRequest("GET", "/products", nil)
-	req.Header.Add("Authorization", "Bearer " +token)
+	req.Header.Add("Authorization", "Bearer "+token)
 	response := executeRequest(req)
 	checkResponseCode(t, http.StatusOK, response.Code)
 	// check the content
@@ -187,7 +187,7 @@ func TestUpdateProduct(t *testing.T) {
 	}
 	// first store info on the existing resource
 	req, _ := http.NewRequest("GET", "/products/1", nil)
-	req.Header.Add("Authorization", "Bearer " +token)
+	req.Header.Add("Authorization", "Bearer "+token)
 	response := executeRequest(req)
 	checkResponseCode(t, http.StatusOK, response.Code)
 
@@ -198,13 +198,13 @@ func TestUpdateProduct(t *testing.T) {
 	var jsonStr = []byte(`{"name":"test product - updated name", "price": 11.22,"sku": "dfr-fadf-adfa"}`)
 	req, _ = http.NewRequest("PUT", "/products/1", bytes.NewBuffer(jsonStr))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Add("Authorization", "Bearer " +token)
+	req.Header.Add("Authorization", "Bearer "+token)
 	response = executeRequest(req)
 	checkResponseCode(t, http.StatusNoContent, response.Code)
 
 	// get call to read the existing resource values
 	req, _ = http.NewRequest("GET", "/products/1", nil)
-	req.Header.Add("Authorization", "Bearer " +token)
+	req.Header.Add("Authorization", "Bearer "+token)
 	response = executeRequest(req)
 	checkResponseCode(t, http.StatusOK, response.Code)
 	var m map[string]interface{}

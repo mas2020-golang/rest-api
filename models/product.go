@@ -104,7 +104,7 @@ func (p *ProductsT) GetAll(pool *pgxpool.Pool) (ProductsT, error) {
 
 // Get the product reading db. All the fields are stored in the *Product object returned by the method.
 func (p *ProductsT) Get(pool *pgxpool.Pool, id int) (prod *Product, err error) {
-	row := pool.QueryRow(context.Background(), "SELECT * FROM products WHERE id=$1",
+	row := pool.QueryRow(context.Background(), "SELECT id, name, description, price, sku FROM products WHERE id=$1",
 		id)
 	prod = new(Product)
 	err = row.Scan(&prod.ID, &prod.Name, &prod.Description, &prod.Price, &prod.SKU)
