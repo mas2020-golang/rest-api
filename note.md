@@ -1,11 +1,11 @@
 # Note
 
-## Remaining features to add
+## Todo list
 
 This paragraph contains a list of features we need, and we have not implemented yet in the project.
 
 - **[TODO]** add a **YAML configuration file** to the project
-- **[TODO]** review the test part to ensure a dedicated container only for testing purposes (as done in the postgresql go lab)
+- **[TODO]** complete the documentation writing the section related to production deployment
 - **[✔︎]** add the **test section** where to test every method before implementing it
 - **[✔︎]** add **PostgreSQL database** to the project and change the model to read and write using a database connection
 - **[✔︎]** implement the JWT security: add a POST /login resource path; create and check the JWT token
@@ -15,3 +15,8 @@ This paragraph contains a list of features we need, and we have not implemented 
 - **[✔]** update the test code to include the token
 - **[✔]** change the code to read username and password from a json body instead of a form
 - **[✔]** add **goutils** to the project to better format the output
+- **[✔]** add a Dockerfile.test to create an image for making the go test using a Postgres image on the same docker
+  network. Then create a script .sh that starts the 2 containers and execute the test. (see if it is worth to use the
+  official golang image in order to have an image to use for testing: now I fetch Alpine but I am not sure)
+- **[✔]** introduce the Dockerfile to create a light image for the API server
+- **[✔]** introduce the docker compose to have a fully working composition with rest-api and postgres

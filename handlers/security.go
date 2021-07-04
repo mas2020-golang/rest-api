@@ -54,7 +54,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	password := jBody["password"]
 
 	if len(username) == 0 || len(password) == 0 {
-		utils.ReturnError(&w, `{"message": "please provide username and password to get the token"}`, http.StatusBadRequest)
+		utils.ReturnError(&w, "please provide username and password to get the token", http.StatusBadRequest)
 		return
 	}
 	// in a real scenario the user and password are checked on a database
@@ -62,7 +62,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		// create the token
 		token, err := createToken(username)
 		if err != nil {
-			utils.ReturnError(&w, `{"message": "please provide username and password to get the token"}`, http.StatusBadRequest)
+			utils.ReturnError(&w, "please provide username and password to get the token", http.StatusBadRequest)
 			return
 		}
 		w.Header().Set("Authorization", "Bearer "+token)
