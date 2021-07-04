@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/mas2020-golang/goutils/fs"
 	"github.com/mas2020-golang/goutils/output"
 	"github.com/mas2020-golang/rest-api/handlers"
 	"github.com/mas2020-golang/rest-api/utils"
@@ -28,9 +29,11 @@ type App struct {
 
 func (a *App) Initialize(user, password, host, dbname string) {
 	var err error
+	// load config file
+	loadConfig()
 
 	// log settings
-	logrus.SetLevel(logrus.TraceLevel)
+	logrus.SetLevel(logrus.Level(utils.Server.Logging.Level))
 	logrus.SetFormatter(&output.TextFormatter{})
 	logrus.SetOutput(os.Stdout)
 
@@ -136,4 +139,36 @@ func commonMiddleware(next http.Handler) http.Handler {
 		w.Header().Add("Content-Type", "application/json")
 		next.ServeHTTP(w, r)
 	})
+}
+
+func loadConfig(){
+	// does the env variable exist?
+	if len(os.Getenv("APP_CONFIG")) > 0{
+		ok, err := fs.ExistsPath(os.Getenv("APP_CONFIG"))
+		output.CheckErrorAndExit("", "", err)
+		if ok{
+			// load the config file
+			err = fs.ReadYaml(os.Getenv("APP_CONFIG"), &utils.Server)
+			output.CheckErrorAndExit("", "", err)
+			return
+		}else{
+			output.ErrorLog("", "an error occurred during the load of the configuration file: " +
+				"APP_CONFIG points to a wrong path")
+			os.Exit(1)
+		}
+	}
+
+	// read from the default location
+	ok, err := fs.ExistsPath("config/server.yml")
+	output.CheckErrorAndExit("", "", err)
+	if ok{
+		// load the config file
+		err = fs.ReadYaml("config/server.yml", &utils.Server)
+		output.CheckErrorAndExit("", "", err)
+		return
+	}else{
+		output.ErrorLog("", "an error occurred during the load of the configuration file: config/server.yml doesn't exist")
+		os.Exit(1)
+	}
+
 }

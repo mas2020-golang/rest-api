@@ -48,7 +48,7 @@ The application has these folders:
 
 ## Start the application (for dev and test envs)
 
-To start the application, first set the correct environment variable:
+To start the application, first set the correct environment variable. These variables are needed for the DB connection:
 
 ```shell
 export APP_DB_HOST=localhost \
@@ -57,8 +57,14 @@ export APP_DB_PASSWORD=password \
 export APP_DB_NAME=postgres
 ```
 
-then start a docker container to host postgres. The database will create all the needed tables simply executing the
-init ddl script that we attach as a volume:
+**Other env variables**
+Important env variables, other than the DB as seen above, are:
+
+- ***APP_CONFIG*** [optional]: represents the config file for the application. In case you do not pass the default value
+is `config/server.yml`.
+
+then start a docker container to host postgres. The database will create all the needed tables simply executing the init
+ddl script that we attach as a volume:
 
 ```shell
 docker run --rm -d -p 5432:5432 -e POSTGRES_PASSWORD=password \
@@ -84,6 +90,7 @@ You can execute the Curl example calls to test the application.
 To test, first add the environment variables, then execute:
 
 ```shell
+export APP_CONFIG=/Users/andrea/development/go/test-projects/rest-api/config/server.yml
 go test github.com/mas2020-golang/rest-api/test/...
 ```
 
@@ -152,9 +159,9 @@ EOF
 
 ## Run as a Docker container
 
-To execute the application as a Docker container we need to use a composition. 
-This is intended for **_dev_** and **_test_** only environments.
-By this way we benefit from having **_postgres_** up and running somewhere. Our composition is made by:
+To execute the application as a Docker container we need to use a composition. This is intended for **_dev_** and **_
+test_** only environments. By this way we benefit from having **_postgres_** up and running somewhere. Our composition
+is made by:
 
 - docker container for **postgres 13.2**
 - docker container for our **rest-api server**
@@ -187,11 +194,13 @@ docker run --rm -d -p 5432:5432 -e POSTGRES_PASSWORD=password \
 ```
 
 build the docker image for testing:
+
 ```shell
 docker build -t appway/rest-api-test:latest -f Dockerfile.t .
 ```
 
 then run the test as:
+
 ```shell
 docker run --rm -it \
 -e APP_DB_HOST=postgres_test \
@@ -202,8 +211,9 @@ docker run --rm -it \
 --name rest-api-test appway/rest-api-test:latest
 ```
 
-You can use these containers to test on the fly the application, and then you can remove everything afterwards.
-To simply execute the **test** you can use the preconfigured script:
+You can use these containers to test on the fly the application, and then you can remove everything afterwards. To
+simply execute the **test** you can use the preconfigured script:
+
 ```shell
 ./test.sh
 ```
@@ -211,14 +221,17 @@ To simply execute the **test** you can use the preconfigured script:
 ## Deploy and start the application (for prod env) [TO COMPLETE]
 
 We assume for the production that you have:
+
 - postgresql database running on some host
 
 You can run the server as a docker container or compile it and executing on the server host.
 
 ### Run as a docker container [TODO]
+
 ...
 
 ### Run as a compiled binary [TODO]
+
 ...
 
 
