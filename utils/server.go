@@ -5,6 +5,9 @@ import "github.com/google/uuid"
 var Server = ServerT{}
 
 type ServerT struct {
+	Logging struct{
+		Level int `yaml: level`
+	} `yaml: logging`
 	TokenPwd string // password for the algo to sign the token
 }
 

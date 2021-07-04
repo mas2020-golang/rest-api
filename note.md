@@ -4,8 +4,8 @@
 
 This paragraph contains a list of features we need, and we have not implemented yet in the project.
 
-- **[TODO]** add a **YAML configuration file** to the project
-- **[TODO]** complete the documentation writing the section related to production deployment
+- **[TODO]** complete the documentation writing the section related to the production deployment
+- **[TODO]** add the swagger engine to document API
 - **[✔︎]** add the **test section** where to test every method before implementing it
 - **[✔︎]** add **PostgreSQL database** to the project and change the model to read and write using a database connection
 - **[✔︎]** implement the JWT security: add a POST /login resource path; create and check the JWT token
@@ -20,3 +20,4 @@ This paragraph contains a list of features we need, and we have not implemented 
   official golang image in order to have an image to use for testing: now I fetch Alpine but I am not sure)
 - **[✔]** introduce the Dockerfile to create a light image for the API server
 - **[✔]** introduce the docker compose to have a fully working composition with rest-api and postgres
+- **[✔]** add a **YAML configuration file** to the project
