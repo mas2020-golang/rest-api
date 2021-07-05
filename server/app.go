@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"github.com/go-openapi/runtime/middleware"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/mas2020-golang/goutils/fs"
@@ -132,6 +133,13 @@ func (a *App) initRoutes() {
 	// login handler
 	a.Router.HandleFunc("/login", handlers.Login).Methods(http.MethodPost)
 
+	// doc part
+	opts := middleware.RedocOpts{
+		SpecURL:  "/static/openapi.yaml",
+	}
+	sh := middleware.Redoc(opts, nil)
+	a.Router.Handle("/docs", sh)
+	a.Router.Handle("/static/openapi.yaml", http.FileServer(http.Dir("./")))
 }
 
 func commonMiddleware(next http.Handler) http.Handler {
