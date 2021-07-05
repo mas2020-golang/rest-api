@@ -12,13 +12,14 @@ COPY . .
 RUN go get -d -v
 
 # Build the binary (in case CGO_ENABLED=0 gives any problem remove it and ensure to use the same distro, e.g. alpine,
-# for the builder the copy)
+# for the builder and the copy)
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o app *.go
 
 # Step 2: copy the executable file
 FROM alpine:latest
-RUN mkdir -p /usr/local/rest-api/bin
+RUN mkdir -p /usr/local/rest-api/bin /usr/local/rest-api/config
 COPY --from=builder /usr/local/rest-api/app /usr/local/rest-api/bin
-WORKDIR /usr/local/rest-api/bin
+COPY --from=builder /usr/local/rest-api/config/* /usr/local/rest-api/config
+WORKDIR /usr/local/rest-api
 EXPOSE 9090
-CMD ["./app"]
+CMD ["bin/app"]

@@ -132,14 +132,13 @@ curl -v -s  http://localhost:9090/products/1 \
 ```shell
 curl -s -X POST http://localhost:9090/products \
 -H "Authorization: Bearer {token}" \
---models-binary @- << EOF | jq
+-d '
 {
     "name": "Espresso 2",
     "description": "Short and strong coffee",
     "price": 2.50,
     "sku": "dfadds-das-fdsa"
-}
-EOF
+}' | jq
 ```
 
 - **UPDATE** an existing product
