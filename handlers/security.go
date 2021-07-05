@@ -18,15 +18,13 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		// starts with Bearer?
 		if !strings.HasPrefix(token, "Bearer") {
 			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
-			//http.Error(w, "", http.StatusUnauthorized)
-			w.Write([]byte(`{"message": "token is wrong/missing"}`))
+			utils.ReturnError(&w, "token is wrong/missing", http.StatusUnauthorized)
 			return
 		}
 		// verify the token
 		claims, err := verifyToken(token)
 		if err != nil {
-			utils.ReturnError(&w, fmt.Sprintf(`{"message": "%s"}`, err.Error()), http.StatusUnauthorized)
+			utils.ReturnError(&w, err.Error(), http.StatusUnauthorized)
 			return
 		}
 		mapClaims := claims.(jwt.MapClaims)
