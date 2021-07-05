@@ -68,7 +68,7 @@ ddl script that we attach as a volume:
 
 ```shell
 docker run --rm -d -p 5432:5432 -e POSTGRES_PASSWORD=password \
--v ${PWD}/scripts/db:/docker-entrypoint-initdb.d/ --name postgres_test postgres
+-v ${PWD}/scripts/db:/docker-entrypoint-initdb.d/ --name postgres_test postgres:13.2-alpine
 ```
 
 finally execute the application typing:
@@ -117,21 +117,21 @@ curl -v -s -X POST http://localhost:9090/login \
 ```shell
 export TOKEN=
 curl -v -s  http://localhost:9090/products \
--H "Authorization: Bearer ${TOKEN}" | jq
+-H "Authorization: Bearer ${token}" | jq
 ```
 
 - **GET** the single product
 
 ```shell
 curl -v -s  http://localhost:9090/products/1 \
--H "Authorization: Bearer {token}" | jq
+-H "Authorization: Bearer ${token}" | jq
 ```
 
 - **CREATE** a new product
 
 ```shell
 curl -s -X POST http://localhost:9090/products \
--H "Authorization: Bearer {token}" \
+-H "Authorization: Bearer ${token}" \
 -d '
 {
     "name": "Espresso 2",
