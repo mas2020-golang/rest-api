@@ -1,0 +1,425 @@
+openapi: "3.0.2"
+info:
+  title: Open rest-api
+  description: "API test project to build a real world API server in Golang"
+  version: '0.1.0-dev@local'
+servers:
+  - url: http://localhost:9090/
+paths:
+  # roles path
+  /login:
+    summary: "login to the system"
+    post:
+      tags:
+        - login
+      summary: get a token from the system
+      description: >
+        Call the server with username and password to get a valid token (expiration time is set to 5 minutes, after
+        that period the token is invalid)
+      operationId: login
+      requestBody:
+        description: Username and password
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginData'
+      responses:
+        '201':
+          description: token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResp'
+        '401':
+          description: credentials are wrong or missing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  # products path
+  /products:
+    get:
+      tags:
+        - products
+      security:
+        - bearerAuth: []
+      summary: Returns a collection of products.
+      description: >
+        Retrieve products applying filters in case of any.
+      operationId: getProducts
+      parameters:
+        - $ref: '#/components/parameters/name'
+        - $ref: '#/components/parameters/created'
+        - $ref: '#/components/parameters/disabled'
+        - $ref: '#/components/parameters/api-resource'
+        - $ref: '#/components/parameters/api-methods'
+      responses:
+        200:
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Products'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags:
+        - products
+      security:
+        - bearerAuth: []
+      summary: Create a new product.
+      description: >
+        Create a product. Duplicates are not allowed.
+
+        - `@admin` or `@root` roles are required to execute the method.
+      operationId: addProduct
+      requestBody:
+        description: >
+          Product to add (take a look at the Schema below to see the
+          mandatory fields)
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductNew'
+            example:
+              name: 'new product'
+              description: "this is the new super privilege"
+              price: 14.99
+              sku: "dfr-fadf-adfa"
+      responses:
+        '201':
+          description: role has been created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        400:
+          description: parameters are wrong or the resource already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /products/{id}:
+    get:
+      tags:
+        - products
+      security:
+        - bearerAuth: []
+      summary: Gets a product by ID.
+      description: >
+        You can get the single product
+      operationId: getProductById
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: product response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+                default:
+        '404':
+          description: resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      tags:
+        - products
+      security:
+        - bearerAuth: []
+      summary: Modify a product by ID.
+      description: >
+        To update one or more fields of the product resource. Remember that PATCH will affect
+        only the fields you pass in the payload.
+
+        - `@admin` or `@root` roles are required to execute the method.
+      operationId: patchProductById
+      parameters:
+        - $ref: '#/components/parameters/id'
+      requestBody:
+        description: Information about the product to modify.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductPatch'
+      responses:
+        '204':
+          description: product has been updated successfully
+        '404':
+          description: role not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags:
+        - products
+      security:
+        - bearerAuth: []
+      summary: Delete a product by ID.
+      description: >
+        Delete the product from the system. This operation cannot be **undone**, so pay
+        attention using this method.
+        In case some roles have the privilege attached to them, the privilege will be not deleted
+        unless you pass the parameter `force=true`.
+
+        - `@admin` or `@root` roles are required to execute the method.
+      operationId: deletePrivilegeById
+      parameters:
+        - $ref: '#/components/parameters/id'
+        - $ref: '#/components/parameters/force'
+      responses:
+        '204':
+          description: deletion product response if OK
+        '404':
+          description: privilege not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  parameters:
+    force:
+      name: force
+      in: query
+      required: false
+      description: force an operation
+      schema:
+        type: boolean
+    id:
+      name: id
+      in: path
+      description: Resource id
+      required: true
+      schema:
+        type: integer
+        format: int64
+    resource-id:
+      name: resource-id
+      in: query
+      description: Resource id
+      required: false
+      schema:
+        type: integer
+        format: int64
+    name:
+      name: name
+      in: query
+      required: false
+      description: "**name** of the resource to search. You can specify a like filter adding the % clause as in a SQL query. Example: %test"
+      schema:
+        type: string
+    api-resource:
+      name: api-resource
+      in: query
+      required: false
+      description: "The api-resource to search. You can specify a like filter adding the % clause as in a SQL query. Example: %/matrix"
+      schema:
+        type: string
+    api-methods:
+      name: api-methods
+      in: query
+      required: false
+      description: >
+        A comma separated list of methods. You can search using the following operators:
+
+        - **in:** retrieve all the users that have at least one role as specified into the filter. Example: in:2,3
+      schema:
+        type: string
+    email:
+      name: email
+      in: query
+      required: false
+      description: "**email** of the resource to search. You can specify a like filter adding the % clause as in a SQL query. Example: %appway.com"
+      schema:
+        type: string
+    user-type:
+      name: user-type
+      in: query
+      required: false
+      description: "type of the user, values are human or tecnichal"
+      schema:
+        type: string
+    disabled:
+      name: disabled
+      in: query
+      required: false
+      description: "to filter a resource for the disabled field. In case you omit the filter is considered."
+      schema:
+        type: boolean
+    created:
+      name: created
+      in: query
+      required: false
+      description: |
+        filter the resources for the created property. Type of filters are:
+        - **eq**: (if not present the filter, = is the default value)
+        - **gt**: (greater than)
+        - **gte**: (greater than equal)
+        - **lt**: (lower than)
+        - **lte**: (lower than equal)
+      schema:
+        type: string
+    updated:
+      name: updated
+      in: query
+      required: false
+      description: |
+        filter the resources for the updated property. Type of filters are:
+        - **eq**: (if not present the filter, = is the default value)
+        - **gt**: (greater than)
+        - **gte**: (greater than equal)
+        - **lt**: (lower than)
+        - **lte**: (lower than equal)
+      schema:
+        type: string
+    short_info:
+      name: short-info
+      in: query
+      required: false
+      description: >
+        `true|false` (default=false) to get short info from the resource. If you need more detailed
+        information pass `true` instead.
+      schema:
+        type: boolean
+    users_roles:
+      name: users-roles
+      in: query
+      required: false
+      description: >
+        A comma separated list of roles to search using the following operators:
+
+        - **eq:** (if not present the filter, = is the default value) retrieve all the users
+        that have an exact match with the roles set into the filter. Example: eq:2,3
+
+        - **in:** retrieve all the users that have at least one role as specified into the filter. Example: in:2,3
+      schema:
+        type: string
+    roles_privs:
+      name: roles-privs
+      in: query
+      required: false
+      description: >
+        A comma separated list of privileges to search using the following operators:
+
+        - **eq:** (if not present the filter, = is the default value) retrieve all the roles
+        that have an exact match with the privileges set into the filter. Example: eq:2,3
+
+        - **in:** retrieve all the roles that have at least one privilege as specified into the filter. Example: in:2,3
+      schema:
+        type: string
+  schemas:
+    ProductPatch: # privilege used for PATCH
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+          format: float
+          description: >
+            Product price
+          example: 11.99
+        sku:
+          type: string
+          description: >
+            The sku field for the product
+          pattern: '[a-z]+-[a-z]+-[a-z]+'
+    Product: # complete privilege object
+      allOf:
+        - $ref: '#/components/schemas/ProductPatch'
+        - type: object
+      type: object
+      properties:
+        id:
+          type: integer
+#        created:
+#          type: string
+#        updated:
+#          type: string
+    Products:
+        type: array
+        items:
+          $ref: '#/components/schemas/Product'
+    ProductNew: # new privilege for POST, PUT
+      allOf:
+        - $ref: '#/components/schemas/ProductPatch'
+        - type: object
+          required:
+            - name
+            - description
+            - price
+    LoginResp:
+      type: object
+      properties:
+        token:
+          type: string
+    LoginData:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        status:
+          type: string
+        title:
+          type: string
+        detail:
+          type: string
+        href:
+          type: string
+          description: "the href for this errors (if exists)"
+          example: "http://mydomain/api/error.html"
+  securitySchemes:
+    bearerAuth:            # arbitrary name for the security scheme
+      type: http
+      scheme: bearer
+      bearerFormat: JWT    # optional, arbitrary value for documentation purposes
