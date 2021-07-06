@@ -131,7 +131,8 @@ func (a *App) initRoutes() {
 	putPostRouter.Use(ph.MiddlewareProductValidation)
 
 	// login handler
-	a.Router.HandleFunc("/login", handlers.Login).Methods(http.MethodPost)
+	login := handlers.NewLogin(a.DBPool)
+	a.Router.HandleFunc("/login", login.Login).Methods(http.MethodPost)
 
 	// doc part
 	opts := middleware.RedocOpts{

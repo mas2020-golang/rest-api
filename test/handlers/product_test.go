@@ -57,7 +57,7 @@ func generateToken() string {
 	buf := bytes.Buffer{}
 	body := `{
 "username": "andrea",
-"password": "test"
+"password": "my-andrea-pwd"
 }`
 	buf.Write([]byte(body))
 	req, _ := http.NewRequest("POST", "/login", &buf)
@@ -65,8 +65,8 @@ func generateToken() string {
 	response := executeRequest(req)
 	var m map[string]string
 	json.Unmarshal(response.Body.Bytes(), &m)
-	if response.Code == 400 {
-		log.Printf("%s", response.Body.String())
+	if response.Code != 201 {
+		log.Printf("Expected response code %d. Got %d (body: %s)\n", 201, response.Code, response.Body.String())
 		os.Exit(1)
 	}
 	return m["token"]

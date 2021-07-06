@@ -2,10 +2,13 @@ package handlers
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/mas2020-golang/goutils/output"
+	"github.com/mas2020-golang/rest-api/models"
 	"github.com/mas2020-golang/rest-api/utils"
 	"net/http"
 	"strings"
@@ -40,9 +43,17 @@ func AuthMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// LoginResource is a struct to manage the /login handler funcs
+type LoginResource struct {
+	pool *pgxpool.Pool
+}
+
+func NewLogin(pool *pgxpool.Pool) *LoginResource {
+	return &LoginResource{pool}
+}
+
 // Login verifies username and password and create a JWT token in return.
-func Login(w http.ResponseWriter, r *http.Request) {
-	//fmt.Println("Login handler func execution")
+func (l *LoginResource) Login(w http.ResponseWriter, r *http.Request) {
 	// unmarshall json body
 	var jBody map[string]string
 	e := json.NewDecoder(r.Body)
@@ -50,26 +61,38 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	username := jBody["username"]
 	password := jBody["password"]
+	output.InfoLog("", fmt.Sprintf(`POST /login {"username": "%s"}`, username))
 
 	if len(username) == 0 || len(password) == 0 {
 		utils.ReturnError(&w, "please provide username and password to get the token", http.StatusBadRequest)
 		return
 	}
-	// in a real scenario the user and password are checked on a database
-	if username == "andrea" && password == "test" {
-		// create the token
-		token, err := createToken(username)
-		if err != nil {
-			utils.ReturnError(&w, "please provide username and password to get the token", http.StatusBadRequest)
-			return
+
+	// check the username and password into the database
+	// get the sha256 for the input password
+	h := sha256.New()
+	h.Write([]byte(password))
+	password = fmt.Sprintf("%x", h.Sum(nil))
+
+	user, err := models.Users.SearchByUserPwd(l.pool, username, password)
+	if err != nil {
+		if strings.HasPrefix(err.Error(), "no rows") {
+			utils.ReturnError(&w, "authentication failed", http.StatusUnauthorized)
+		} else {
+			utils.ReturnError(&w, "error during credential check:"+err.Error(), http.StatusInternalServerError)
 		}
-		w.Header().Set("Authorization", "Bearer "+token)
-		w.WriteHeader(http.StatusCreated)
-		w.Write([]byte(fmt.Sprintf(`{"token": "%s"}`, token)))
-	} else {
-		utils.ReturnError(&w, `{"message": "credentials are not correct"}`, http.StatusUnauthorized)
 		return
 	}
+	output.TraceLog("", fmt.Sprintf("load user: %#v", user))
+	// create the token
+	token, err := createToken(username)
+	if err != nil {
+		utils.ReturnError(&w, "please provide username and password to get the token", http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Authorization", "Bearer "+token)
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte(fmt.Sprintf(`{"token": "%s"}`, token)))
 }
 
 // createToken creates the JWT token
