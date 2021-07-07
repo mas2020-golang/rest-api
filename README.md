@@ -98,7 +98,9 @@ to have more information add the `-v` flag.
 
 ## Curl examples for the 'products' handler
 
-- **LOGIN** to the application
+- **LOGIN** to the application:
+  - *root* pwd is `my-root-pwd`
+  - *andrea* pwd is `my-andrea-pwd`
 
 ```shell
 curl -v -s -X POST http://localhost:9090/login \
@@ -106,7 +108,7 @@ curl -v -s -X POST http://localhost:9090/login \
 -d '
 {
     "username": "andrea",
-    "password": "test"
+    "password": "my-andrea-pwd"
 } 
 ' | jq
 #sed 's+\([a-zA-Z0-9]*\.[a-zA-Z0-9]*\.[a-zA-Z0-9]*\).*+\1+'

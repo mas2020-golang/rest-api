@@ -1,10 +1,6 @@
 # STEP 1 build executable binary
 FROM golang:1.16.5-buster
 
-# Install git.
-# Git is required for fetching the dependencies.
-RUN apt-get update && apt-get install git
-
 WORKDIR /usr/local/rest-api
 COPY . .
 

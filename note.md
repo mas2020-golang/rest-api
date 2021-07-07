@@ -4,8 +4,10 @@
 
 This paragraph contains a list of features we need, and we have not implemented yet in the project.
 
-- **[TODO]** complete the documentation writing the section related to the production deployment
-- **[TODO]** add the swagger engine to document API
+- **[TODO]** document the section related to the structure of the project
+- **[TODO]** document the section related to the production deployment
+- **[✔︎]** add a user table and decode user and password reading into the database
+- **[✔]** add the runtime engine for the openapi to document API
 - **[✔︎]** add the **test section** where to test every method before implementing it
 - **[✔︎]** add **PostgreSQL database** to the project and change the model to read and write using a database connection
 - **[✔︎]** implement the JWT security: add a POST /login resource path; create and check the JWT token
