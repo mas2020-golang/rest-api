@@ -17,17 +17,19 @@ docker run --rm -d -p 5432:5432 -e POSTGRES_PASSWORD=password \
 -v "${PWD}"/scripts/db:/docker-entrypoint-initdb.d/ \
 --network rest-api-test \
 --name postgres_test postgres:13.2-alpine
-
-printf "${SUB_ACT} building the latest docker image for the rest-api test...${STOP_COLOR}\n"
-docker build -t appway/rest-api-test:latest -f Dockerfile.test .
+# wait some time to load postgresql
+sleep 1
 
 printf "${SUB_ACT} executing the test...${STOP_COLOR}\n"
 docker run --rm -it \
+-w /usr/local/rest-api \
 -e APP_DB_HOST=postgres_test \
 -e APP_DB_USERNAME=postgres \
 -e APP_DB_PASSWORD=password \
 -e APP_DB_NAME=postgres \
 -e APP_CONFIG=/usr/local/rest-api/config/server.yml \
+-v "${PWD}":/usr/local/rest-api \
 --network rest-api-test \
---name rest-api-test appway/rest-api-test:latest
+--name rest-api-test golang:1.16.5-buster go test github.com/mas2020-golang/rest-api/test/...
+
 
