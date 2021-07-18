@@ -4,7 +4,7 @@ services:
   api-server:
     build:
       context: .
-    image: appway/rest-api:latest
+    image: mas2020/rest-api:latest
     restart: on-failure
     depends_on:
       - postgresql

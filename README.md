@@ -57,12 +57,6 @@ export APP_DB_PASSWORD=password \
 export APP_DB_NAME=postgres
 ```
 
-**Other env variables**
-Important env variables, other than the DB as seen above, are:
-
-- ***APP_CONFIG*** [optional]: represents the config file for the application. In case you do not pass the default value
-is `config/server.yml`.
-
 then start a docker container to host postgres. The database will create all the needed tables simply executing the init
 ddl script that we attach as a volume:
 
@@ -85,6 +79,15 @@ go run *.go > rest-api.log
 
 You can execute the Curl example calls to test the application.
 
+### Other env variables
+
+Important env variables, other than the DB as seen above, are:
+
+- ***APP_CONFIG*** [optional]: represents the config file for the application. In case you do not pass the default value
+  is `config/server.yml`.
+- ***APP_JWTPWD*** [optional]: represents the pwd to use when signing the token. If the variable is not given the pwd
+is created randomly.
+  
 ### Test the application
 
 To test, first add the environment variables, then execute:
@@ -99,8 +102,8 @@ to have more information add the `-v` flag.
 ## Curl examples for the 'products' handler
 
 - **LOGIN** to the application:
-  - *root* pwd is `my-root-pwd`
-  - *andrea* pwd is `my-andrea-pwd`
+    - *root* pwd is `my-root-pwd`
+    - *andrea* pwd is `my-andrea-pwd`
 
 ```shell
 curl -v -s -X POST http://localhost:9090/login \
